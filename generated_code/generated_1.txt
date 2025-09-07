@@ -1,0 +1,3 @@
+# Create a new directory for your calculator project (e.g., `calculator`)
+$ mkdir calculator
+$ cd calculator

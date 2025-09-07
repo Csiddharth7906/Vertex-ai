@@ -3,17 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chat - VertexAI</title>
+    <title>DevCoder AI - Developer Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         'vertex-green': '#00D084',
-                        'dark-bg': '#0A0E0F',
-                        'dark-card': '#1A1F23',
-                        'dark-border': '#2A3037'
+                        'github-dark': '#0d1117',
+                        'github-card': '#161b22',
+                        'github-border': '#30363d',
+                        'github-blue': '#58a6ff',
+                        'github-purple': '#bc8cff'
                     }
                 }
             }
@@ -21,25 +27,49 @@
     </script>
     <style>
         body {
-            background: #0A0E0F;
+            background: #0d1117;
             background-image: 
-                radial-gradient(circle at 20% 80%, rgba(0, 208, 132, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(0, 208, 132, 0.05) 0%, transparent 50%);
+                radial-gradient(circle at 25% 25%, rgba(88, 166, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(188, 140, 255, 0.15) 0%, transparent 50%),
+                linear-gradient(180deg, #0d1117 0%, #010409 100%);
             background-attachment: fixed;
         }
         
         .ai-icon {
-            background: linear-gradient(135deg, #00D084 0%, #39FF14 100%);
+            background: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: #000;
+            color: #fff;
         }
         
-        .neon-glow {
-            box-shadow: 0 0 15px rgba(0, 208, 132, 0.3);
+        .github-glow {
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.3);
+        }
+        
+        .github-button {
+            background: linear-gradient(180deg, #21262d, #161b22);
+            border: 1px solid #30363d;
+            transition: all 0.2s ease;
+        }
+        
+        .github-button:hover {
+            background: linear-gradient(180deg, #30363d, #21262d);
+            border-color: #58a6ff;
+            transform: translateY(-1px);
+        }
+        
+        .primary-button {
+            background: linear-gradient(180deg, #238636, #196127);
+            border: 1px solid #2ea043;
+        }
+        
+        .primary-button:hover {
+            background: linear-gradient(180deg, #2ea043, #238636);
+            transform: translateY(-1px);
+            box-shadow: 0 8px 25px rgba(46, 160, 67, 0.25);
         }
         
         .chat-scroll::-webkit-scrollbar {
@@ -47,17 +77,17 @@
         }
         
         .chat-scroll::-webkit-scrollbar-track {
-            background: #1A1F23;
+            background: #161b22;
             border-radius: 4px;
         }
         
         .chat-scroll::-webkit-scrollbar-thumb {
-            background: #00D084;
+            background: #58a6ff;
             border-radius: 4px;
         }
         
         .chat-scroll::-webkit-scrollbar-thumb:hover {
-            background: #39FF14;
+            background: #bc8cff;
         }
         
         .message-animation {
@@ -74,30 +104,116 @@
                 transform: translateY(0);
             }
         }
+        
+        /* Code block styling */
+        .code-block {
+            position: relative;
+            margin: 16px 0;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid #58a6ff;
+            color: #58a6ff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .copy-button:hover {
+            background: #58a6ff;
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        
+        .create-file-button {
+            background: linear-gradient(180deg, #238636, #196127);
+            border: 1px solid #2ea043;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+            display: inline-block;
+            font-weight: 500;
+        }
+        
+        .create-file-button:hover {
+            background: linear-gradient(180deg, #2ea043, #238636);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(46, 160, 67, 0.25);
+        }
+        
+        .file-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .file-modal-content {
+            background: linear-gradient(145deg, #161b22, #0d1117);
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        }
+        
+        pre[class*="language-"] {
+            background: #0d1117 !important;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            margin: 0;
+        }
+        
+        code[class*="language-"] {
+            color: #d4d4d4 !important;
+        }
     </style>
 </head>
 <body class="min-h-screen">
     <!-- Header -->
-    <header class="bg-dark-card/90 backdrop-blur-sm border-b border-dark-border sticky top-0 z-10">
+    <header class="bg-github-card/90 backdrop-blur-md border-b border-github-border sticky top-0 z-10">
         <div class="max-w-4xl mx-auto px-6">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center space-x-3">
-                    <button onclick="goBack()" class="text-gray-400 hover:text-vertex-green transition-colors">
+                    <button onclick="goBack()" class="text-gray-400 hover:text-github-blue transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
                     </button>
-                    <div class="w-8 h-8 ai-icon">
+                    <div class="w-10 h-10 ai-icon">
                         <span class="text-sm">AI</span>
                     </div>
                     <div>
-                        <h1 class="text-white font-semibold">AI Assistant</h1>
-                        <p class="text-vertex-green text-xs">Online</p>
+                        <h1 class="text-white font-semibold text-lg">DevCoder AI</h1>
+                        <p class="text-github-blue text-xs">Chat Assistant</p>
                     </div>
                 </div>
-                <button onclick="clearChat()" class="bg-dark-border hover:bg-vertex-green hover:text-black text-vertex-green px-4 py-2 rounded-lg text-sm transition-colors border border-vertex-green/50">
-                    Clear Chat
-                </button>
+                <div class="flex items-center space-x-3">
+                    <button onclick="switchToEditor()" class="primary-button text-white px-6 py-2 rounded-lg text-sm font-medium">
+                        Code Editor
+                    </button>
+                    <button onclick="clearChat()" class="github-button text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        Clear Chat
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -110,33 +226,72 @@
                 <div class="w-10 h-10 ai-icon flex-shrink-0">
                     <span>AI</span>
                 </div>
-                <div class="bg-dark-card rounded-2xl p-4 max-w-2xl border border-vertex-green/20">
+                <div class="bg-github-card rounded-2xl p-4 max-w-2xl border border-github-border github-glow">
                     <p class="text-gray-200 leading-relaxed">
-                        Hello! I'm your AI assistant. I'm here to help you with any questions, provide information, solve problems, or just have a conversation. What would you like to talk about today?
+                        Hello! I'm DevCoder AI, your specialized coding assistant. I'm here to help you with programming tasks, code reviews, debugging, and technical solutions. Ask me about any programming language, framework, or development challenge!
                     </p>
                 </div>
             </div>
         </div>
 
         <!-- Chat Input -->
-        <div class="bg-dark-card/80 backdrop-blur-sm rounded-2xl border border-dark-border p-4 neon-glow mt-4">
+        <div class="bg-github-card/80 backdrop-blur-md rounded-2xl border border-github-border p-4 github-glow mt-4">
             <div class="flex space-x-4">
                 <input 
                     type="text" 
                     id="messageInput" 
-                    placeholder="Type your message here..." 
-                    class="flex-1 bg-dark-border border border-vertex-green/30 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-vertex-green focus:ring-2 focus:ring-vertex-green/20 transition-all"
+                    placeholder="Ask me about coding, debugging, or any programming challenge..." 
+                    class="flex-1 bg-github-dark border border-github-border rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-github-blue focus:ring-2 focus:ring-github-blue/20 transition-all"
                     autocomplete="off"
                 >
                 <button 
                     id="sendButton" 
-                    class="bg-vertex-green hover:bg-vertex-green/80 text-black px-6 py-3 rounded-xl font-medium transition-colors neon-glow flex items-center space-x-2"
+                    class="primary-button text-white px-6 py-3 rounded-xl font-medium flex items-center space-x-2"
                 >
                     <span>Send</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                     </svg>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Creation Modal -->
+    <div id="fileModal" class="file-modal">
+        <div class="file-modal-content">
+            <h3 class="text-white text-lg font-semibold mb-4">Create Code File</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-gray-300 text-sm block mb-2">Filename:</label>
+                    <input type="text" id="filename" placeholder="e.g., main.py, app.js, index.html" 
+                           class="w-full bg-dark-border border border-vertex-green/30 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:border-vertex-green">
+                </div>
+                <div>
+                    <label class="text-gray-300 text-sm block mb-2">Language:</label>
+                    <select id="languageSelect" class="w-full bg-dark-border border border-vertex-green/30 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-vertex-green">
+                        <option value="">Auto-detect</option>
+                        <option value="python">Python</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                        <option value="php">PHP</option>
+                        <option value="ruby">Ruby</option>
+                        <option value="go">Go</option>
+                        <option value="rust">Rust</option>
+                        <option value="typescript">TypeScript</option>
+                    </select>
+                </div>
+                <div class="flex space-x-3 pt-4">
+                    <button onclick="createFile()" class="bg-vertex-green text-black px-4 py-2 rounded-lg font-medium hover:bg-vertex-green/80 transition-colors">
+                        Create File
+                    </button>
+                    <button onclick="closeFileModal()" class="bg-gray-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-500 transition-colors">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -151,18 +306,26 @@
         }
 
         function clearChat() {
-            chatMessages.innerHTML = `
+            document.getElementById('chatMessages').innerHTML = `
                 <div class="flex items-start space-x-3 message-animation">
                     <div class="w-10 h-10 ai-icon flex-shrink-0">
-                        <span>AI</span>
+                        <span class="text-sm">AI</span>
                     </div>
-                    <div class="bg-dark-card rounded-2xl p-4 max-w-2xl border border-vertex-green/20">
-                        <p class="text-gray-200 leading-relaxed">
-                            Hello! I'm your AI assistant. I'm here to help you with any questions, provide information, solve problems, or just have a conversation. What would you like to talk about today?
-                        </p>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="font-medium text-vertex-green">DevCoder AI</span>
+                            <span class="text-xs text-gray-400">${new Date().toLocaleTimeString()}</span>
+                        </div>
+                        <div class="message-text">
+                            Hello! I'm DevCoder AI, your coding assistant. I can help you write code, debug issues, explain concepts, and create complete applications. What would you like to build today?
+                        </div>
                     </div>
                 </div>
             `;
+        }
+
+        function switchToEditor() {
+            window.location.href = '/editor';
         }
 
         function addMessage(content, isUser = false, isError = false) {
@@ -180,18 +343,150 @@
                     </div>
                 `;
             } else {
+                // Parse markdown and render with syntax highlighting
+                const parsedContent = parseMarkdownWithCode(content);
                 messageDiv.innerHTML = `
                     <div class="w-10 h-10 ai-icon flex-shrink-0">
                         <span>AI</span>
                     </div>
                     <div class="bg-dark-card rounded-2xl p-4 max-w-2xl border ${isError ? 'border-red-500' : 'border-vertex-green/20'}">
-                        <p class="text-gray-200 leading-relaxed">${content}</p>
+                        <div class="text-gray-200 leading-relaxed">${parsedContent}</div>
                     </div>
                 `;
             }
             
             chatMessages.appendChild(messageDiv);
+            
+            // Apply syntax highlighting to new code blocks
+            if (!isUser) {
+                Prism.highlightAllUnder(messageDiv);
+                addCopyButtons(messageDiv);
+            }
+            
             chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function parseMarkdownWithCode(content) {
+            // Configure marked for code highlighting
+            marked.setOptions({
+                highlight: function(code, lang) {
+                    if (lang && Prism.languages[lang]) {
+                        return Prism.highlight(code, Prism.languages[lang], lang);
+                    }
+                    return code;
+                }
+            });
+            
+            return marked.parse(content);
+        }
+
+        function addCopyButtons(container) {
+            const codeBlocks = container.querySelectorAll('pre');
+            codeBlocks.forEach(pre => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'code-block';
+                pre.parentNode.insertBefore(wrapper, pre);
+                wrapper.appendChild(pre);
+                
+                const buttonContainer = document.createElement('div');
+                buttonContainer.style.position = 'absolute';
+                buttonContainer.style.top = '8px';
+                buttonContainer.style.right = '8px';
+                buttonContainer.style.display = 'flex';
+                buttonContainer.style.gap = '8px';
+                
+                const copyButton = document.createElement('button');
+                copyButton.className = 'copy-button';
+                copyButton.textContent = 'Copy';
+                copyButton.onclick = () => copyCode(pre, copyButton);
+                
+                const createFileButton = document.createElement('button');
+                createFileButton.className = 'create-file-button';
+                createFileButton.textContent = 'Create File';
+                createFileButton.onclick = () => openFileModal(pre);
+                
+                buttonContainer.appendChild(copyButton);
+                buttonContainer.appendChild(createFileButton);
+                wrapper.appendChild(buttonContainer);
+            });
+        }
+
+        let currentCodeContent = '';
+        let currentLanguage = '';
+
+        function openFileModal(pre) {
+            const code = pre.querySelector('code');
+            currentCodeContent = code ? code.textContent : pre.textContent;
+            
+            // Try to detect language from class
+            if (code && code.className) {
+                const langMatch = code.className.match(/language-(\w+)/);
+                if (langMatch) {
+                    currentLanguage = langMatch[1];
+                    document.getElementById('languageSelect').value = currentLanguage;
+                }
+            }
+            
+            document.getElementById('fileModal').style.display = 'flex';
+            document.getElementById('filename').focus();
+        }
+
+        function closeFileModal() {
+            document.getElementById('fileModal').style.display = 'none';
+            document.getElementById('filename').value = '';
+            document.getElementById('languageSelect').value = '';
+        }
+
+        async function createFile() {
+            const filename = document.getElementById('filename').value.trim();
+            const language = document.getElementById('languageSelect').value || currentLanguage;
+            
+            if (!filename) {
+                alert('Please enter a filename');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/create_file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        filename: filename,
+                        content: currentCodeContent,
+                        language: language
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    addMessage(`✅ ${result.message}`, false);
+                    closeFileModal();
+                } else {
+                    addMessage(`❌ Error: ${result.error}`, false, true);
+                }
+            } catch (error) {
+                addMessage(`❌ Failed to create file: ${error.message}`, false, true);
+            }
+        }
+
+        function copyCode(pre, button) {
+            const code = pre.querySelector('code');
+            const text = code ? code.textContent : pre.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                button.textContent = 'Copied!';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            }).catch(() => {
+                button.textContent = 'Failed';
+                setTimeout(() => {
+                    button.textContent = 'Copy';
+                }, 2000);
+            });
         }
 
         function showTypingIndicator() {

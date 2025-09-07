@@ -1,0 +1,2 @@
+# Run the calculator
+$ python calculator.py

@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevCoder AI - Code Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'vertex-green': '#00D084',
+                        'dark-bg': '#0A0E0F',
+                        'dark-card': '#1A1F23',
+                        'dark-border': '#2A3037',
+                        'editor-bg': '#1e1e1e',
+                        'sidebar-bg': '#252526'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0A0E0F;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        
+        /* Global Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #161b22;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        
+        ::-webkit-scrollbar-corner {
+            background: #161b22;
+        }
+        
+        .editor-layout {
+            display: grid;
+            grid-template-columns: minmax(150px, 18%) 4px 1fr 4px minmax(200px, 280px);
+            grid-template-rows: 48px 1fr;
+            grid-template-areas: 
+                "header header header header header"
+                "sidebar splitter1 editor splitter2 chat";
+            height: 100vh;
+            max-width: 100vw;
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .editor-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 50px auto 1fr auto;
+                grid-template-areas: 
+                    "header"
+                    "tabs"
+                    "editor"
+                    "chat";
+            }
+            
+            .sidebar, .splitter1, .splitter2 {
+                display: none;
+            }
+            
+            .mobile-tabs {
+                display: flex;
+                overflow-x: auto;
+                background: #252526;
+                border-bottom: 1px solid #3e3e42;
+                padding: 0 8px;
+            }
+            
+            .mobile-tab {
+                padding: 8px 16px;
+                background: #2d2d30;
+                border: none;
+                color: #cccccc;
+                cursor: pointer;
+                white-space: nowrap;
+                border-radius: 4px 4px 0 0;
+                margin-right: 4px;
+            }
+            
+            .mobile-tab.active {
+                background: #1e1e1e;
+                color: #ffffff;
+            }
+            
+            .chat-panel {
+                max-height: 200px;
+                display: none;
+            }
+            
+            .header .flex {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            #modeToggle {
+                font-size: 12px;
+                padding: 4px 8px;
+            }
+        }
+        
+        .editor-container {
+            min-height: 400px;
+        }
+
+        @media (min-width: 769px) {
+            .mobile-tabs {
+                display: none;
+            }
+        }
+        
+        .header {
+            grid-area: header;
+            background: #21262d;
+            border-bottom: 1px solid #30363d;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            height: 48px;
+            min-height: 48px;
+        }
+        
+        .sidebar {
+            grid-area: sidebar;
+            background: #161b22;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .editor-container {
+            grid-area: editor;
+            background: #0d1117;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .splitter {
+            background: #30363d;
+            cursor: col-resize;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+        
+        .splitter:hover {
+            background: #58a6ff;
+        }
+        
+        .splitter1 {
+            grid-area: splitter1;
+        }
+        
+        .splitter2 {
+            grid-area: splitter2;
+        }
+        
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #252526;
+            border-bottom: 1px solid #3e3e42;
+            min-height: 40px;
+        }
+        
+        .tabs-container {
+            display: flex;
+            background: #21262d;
+            border-bottom: 1px solid #30363d;
+            overflow-x: auto;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            background: #21262d;
+            color: #8B949E;
+            border-right: 1px solid #30363d;
+            cursor: pointer;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .tab:hover {
+            background: #30363d;
+            color: #F0F6FC;
+        }
+        
+        .tab.active {
+            background: #0d1117;
+            color: #F0F6FC;
+            border-bottom: 2px solid #58a6ff;
+        }
+        
+        .tab-close:hover {
+            color: white;
+        }
+        
+        .editor-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .terminal-window {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 500px;
+            height: 300px;
+            background: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1000;
+            resize: both;
+            overflow: hidden;
+            min-width: 300px;
+            min-height: 200px;
+        }
+        
+        .terminal-header {
+            background: #2d2d30;
+            padding: 8px 12px;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+        }
+        
+        .terminal-title {
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .terminal-controls {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .terminal-btn {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+        }
+        
+        .terminal-minimize {
+            background: #ffbd2e;
+        }
+        
+        .terminal-close {
+            background: #ff5f57;
+        }
+        
+        .terminal-content {
+            height: calc(100% - 40px);
+            padding: 12px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            color: #d4d4d4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 100%;
+        }
+        
+        .terminal-content::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .terminal-content::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+        
+        .terminal-content::-webkit-scrollbar-thumb {
+            background: #3e3e42;
+            border-radius: 4px;
+        }
+        
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .output-header h4 {
+            color: #ffffff;
+            font-size: 12px;
+            margin: 0;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            color: #cccccc;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #outputContent {
+            color: #d4d4d4;
+            font-size: 12px;
+            margin: 0;
+            white-space: pre-wrap;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        .chat-panel {
+            grid-area: chat;
+            background: #161b22;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Custom Scrollbar Styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: #21262d;
+            border-radius: 4px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .sidebar::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 3px;
+        }
+        
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #484f58;
+        }
+        
+        .file-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            color: #e6edf3;
+            font-size: 13px;
+        }
+        
+        .file-item:hover {
+            background: #21262d;
+            transform: translateX(2px);
+        }
+        
+        .file-item.active {
+            background: linear-gradient(90deg, #58a6ff, #bc8cff);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(88, 166, 255, 0.3);
+        }
+        
+        .file-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: #161b22;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 3px;
+        }
+        
+        @media (max-width: 768px) {
+            .chat-messages {
+                max-height: 250px;
+                padding: 12px;
+            }
+        }
+        
+        .chat-input-area {
+            padding: 16px;
+            border-top: 1px solid #3e3e42;
+        }
+        
+        .message {
+            margin-bottom: 16px;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-width: 100%;
+            color: #e6edf3;
+        }
+        
+        .user-message {
+            background: linear-gradient(135deg, #238636, #2ea043);
+            color: #fff;
+            align-self: flex-end;
+            margin-left: auto;
+            border-color: #2ea043;
+        }
+        
+        .ai-message {
+            background: #21262d;
+            color: #F0F6FC;
+            align-self: flex-start;
+            border-color: #30363d;
+        }
+        
+        .tabs {
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            display: flex;
+            min-height: 35px;
+        }
+        
+        .tab {
+            padding: 8px 16px;
+            background: #2d2d30;
+            color: #cccccc;
+            border-right: 1px solid #3e3e42;
+            cursor: pointer;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .tab.active {
+            background: #1e1e1e;
+            color: white;
+        }
+        
+        .tab-close {
+            margin-left: 8px;
+            color: #858585;
+            font-weight: bold;
+        }
+        
+        .tab-close:hover {
+            color: white;
+        }
+        
+        pre code {
+            background: #1e1e1e !important;
+            color: #d4d4d4 !important;
+            padding: 16px !important;
+            border-radius: 4px !important;
+            display: block !important;
+            overflow-x: auto !important;
+            max-width: 350px !important;
+            white-space: pre-wrap !important;
+            word-wrap: break-word !important;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            color: #00D084;
+            font-style: italic;
+            font-size: 12px;
+        }
+        
+        .typing-dots {
+            display: flex;
+            margin-left: 8px;
+        }
+        
+        .typing-dots div {
+            width: 4px;
+            height: 4px;
+            background: #00D084;
+            border-radius: 50%;
+            margin: 0 1px;
+            animation: typing 1.4s infinite;
+        }
+        
+        .typing-dots div:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots div:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; }
+            30% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-layout">
+        <!-- Header -->
+        <div class="header">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-gradient-to-br from-github-blue to-github-purple rounded-lg flex items-center justify-center">
+                    <span class="text-white text-sm font-bold">DC</span>
+                </div>
+                <span class="text-white font-semibold">DevCoder AI</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button onclick="switchMode()" class="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 hover:scale-105 shadow-md flex items-center gap-1">
+                    💬 Chat
+                </button>
+                <div class="flex items-center gap-2 text-sm text-gray-400">
+                    <span>Ready</span>
+                    <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile File Tabs -->
+        <div class="mobile-tabs" style="grid-area: tabs;">
+            <!-- Tabs will be populated by JavaScript -->
+        </div>
+
+        <!-- Editor Container -->
+        <div class="editor-container">
+            <div class="editor-header">
+                <div class="tabs-container">
+                    <div class="tab active" data-file="welcome">
+                        <span>Welcome</span>
+                    </div>
+                </div>
+                <div class="editor-actions">
+                    <button id="runCodeBtn" onclick="runCode()" class="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        ▶ Run Code
+                    </button>
+                </div>
+            </div>
+            <div id="editor" style="flex: 1;"></div>
+        </div>
+
+        <!-- Floating Terminal Window -->
+        <div id="terminalWindow" class="terminal-window">
+            <div class="terminal-header" id="terminalHeader">
+                <div class="terminal-title">🖥️ Terminal Output</div>
+                <div class="terminal-controls">
+                    <button class="terminal-btn terminal-minimize" onclick="minimizeTerminal()"></button>
+                    <button class="terminal-btn terminal-close" onclick="closeTerminal()"></button>
+                </div>
+            </div>
+            <div class="terminal-content" id="terminalContent"></div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="p-4 border-b border-github-border">
+                <div class="flex items-center justify-between mb-3">
+                    <h2 class="text-white text-sm font-semibold">EXPLORER</h2>
+                </div>
+                <button onclick="createNewFile()" class="w-full bg-gradient-to-r from-github-blue to-github-purple hover:from-blue-600 hover:to-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 shadow-lg flex items-center justify-center gap-2">
+                    <span class="text-lg">+</span> New File
+                </button>
+            </div>
+            
+            <div class="file-list" id="fileList">
+                <div class="file-item active" onclick="openFile('welcome')">
+                    <span class="text-blue-400">📄</span>
+                    <span>Welcome</span>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-github-border mt-auto">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-6 h-6 rounded bg-gradient-to-br from-github-blue to-github-purple flex items-center justify-center">
+                        <span class="text-white text-xs font-bold">AI</span>
+                    </div>
+                    <h3 class="text-white text-sm font-semibold">DevCoder AI Assistant</h3>
+                </div>
+                <p class="text-gray-400 text-xs leading-relaxed">Ask me to create code, and I'll generate files automatically.</p>
+            </div>
+        </div>
+
+        <!-- Splitter 1 -->
+        <div class="splitter splitter1" id="splitter1"></div>
+
+        <!-- Splitter 2 -->
+        <div class="splitter splitter2" id="splitter2"></div>
+
+        <!-- Chat Panel -->
+        <div class="chat-panel">
+            <div class="p-4 border-b border-github-border">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="w-6 h-6 rounded bg-gradient-to-br from-github-blue to-github-purple flex items-center justify-center">
+                        <span class="text-white text-xs font-bold">AI</span>
+                    </div>
+                    <h3 class="text-white text-sm font-semibold">DevCoder AI Assistant</h3>
+                </div>
+                <p class="text-gray-400 text-xs leading-relaxed">Ask me to create code, and I'll generate files automatically.</p>
+            </div>
+            
+            <div class="chat-messages" id="chatMessages" style="flex: 1; overflow-y: auto; padding: 16px; max-height: calc(100vh - 200px); scroll-behavior: smooth;">
+                <div class="message ai" style="color: #e6edf3;">
+                    <strong style="color: #58a6ff;">DevCoder AI:</strong> Hello! I'm your coding assistant. Ask me to create any code and I'll automatically generate files for you. Try: "Create a Python web scraper" or "Build a React todo app"
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <div class="flex space-x-2">
+                    <input 
+                    type="text" 
+                    id="chatInput" 
+                    placeholder="Ask me to create code..."
+                    class="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
+                    style="background-color: #21262d !important; border-color: #30363d !important; color: #e6edf3 !important;"
+                    onkeypress="if(event.key==='Enter') sendMessage()"
+                    >
+                    <button 
+                    onclick="sendMessage()" 
+                    class="bg-gradient-to-r from-github-blue to-github-purple hover:from-blue-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:scale-105 shadow-lg"
+                    >
+                    Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let editor;
+        let openFiles = new Map();
+        let activeFile = 'welcome';
+        let fileCounter = 1;
+
+        // Initialize Monaco Editor
+        function initializeEditor() {
+            require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.34.1/min/vs' }});
+            require(['vs/editor/editor.main'], function() {
+                editor = monaco.editor.create(document.getElementById('editor'), {
+                    value: `// Welcome To DevCoder AI
+// Ask the AI assistant to create code and files will be automatically generated here
+// Try asking: "Create a Python web scraper" or "Build a React component"
+
+console.log("Welcome to DevCoder AI!");`,
+                    language: 'javascript',
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    fontSize: 14,
+                    lineNumbers: 'on',
+                    minimap: { enabled: false },
+                    scrollBeyondLastLine: false,
+                    wordWrap: 'on'
+                });
+
+                // Store the welcome content
+                openFiles.set('welcome', {
+                    content: editor.getValue(),
+                    language: 'javascript'
+                });
+                
+                // Initialize splitters
+                initializeSplitters();
+            });
+        }
+
+        // Initialize drag splitters
+        function initializeSplitters() {
+            let isResizing = false;
+            let currentSplitter = null;
+            
+            const splitter1 = document.getElementById('splitter1');
+            const splitter2 = document.getElementById('splitter2');
+            const editorLayout = document.querySelector('.editor-layout');
+            
+            function startResize(e, splitter) {
+                isResizing = true;
+                currentSplitter = splitter;
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+                e.preventDefault();
+            }
+            
+            function resize(e) {
+                if (!isResizing || !currentSplitter) return;
+                
+                const rect = editorLayout.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const totalWidth = rect.width;
+                
+                if (currentSplitter === splitter1) {
+                    // Resize left panel - constrained percentage
+                    const newWidthPercent = Math.max(10, Math.min(35, (x / totalWidth) * 100));
+                    const maxRightWidth = Math.min(280, totalWidth * 0.25);
+                    editorLayout.style.gridTemplateColumns = `${newWidthPercent}% 4px 1fr 4px ${maxRightWidth}px`;
+                } else if (currentSplitter === splitter2) {
+                    // Resize right panel - ensure it fits on screen
+                    const availableWidth = totalWidth - (totalWidth * 0.18) - 8; // Account for left panel and splitters
+                    const rightWidth = Math.max(200, Math.min(Math.min(320, availableWidth * 0.4), totalWidth - x));
+                    editorLayout.style.gridTemplateColumns = `minmax(150px, 18%) 4px 1fr 4px ${rightWidth}px`;
+                }
+                
+                // Trigger Monaco editor resize
+                if (editor) {
+                    setTimeout(() => editor.layout(), 10);
+                }
+            }
+            
+            function stopResize() {
+                isResizing = false;
+                currentSplitter = null;
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+            }
+            
+            // Add event listeners
+            splitter1.addEventListener('mousedown', (e) => startResize(e, splitter1));
+            splitter2.addEventListener('mousedown', (e) => startResize(e, splitter2));
+            document.addEventListener('mousemove', resize);
+            document.addEventListener('mouseup', stopResize);
+        }
+
+        initializeEditor();
+
+        function createNewFile() {
+            const filename = prompt('Enter filename (e.g., main.py, app.js):');
+            if (filename) {
+                createFile(filename, '', detectLanguage(filename));
+            }
+        }
+
+        function createFile(filename, content, language) {
+            console.log(`Creating file: ${filename} with ${content.length} characters`);
+            const fileId = `file_${fileCounter++}`;
+            
+            openFiles.set(fileId, {
+                content: content,
+                language: language,
+                path: filename,
+                name: filename
+            });
+            
+            // Add tab
+            const tabsContainer = document.querySelector('.tabs-container');
+            if (tabsContainer) {
+                const tab = document.createElement('div');
+                tab.className = 'tab';
+                tab.setAttribute('data-file', fileId);
+                tab.innerHTML = `<span>${filename}</span>`;
+                tab.onclick = () => switchToFile(fileId);
+                tabsContainer.appendChild(tab);
+            }
+            
+            // Switch to the new file
+            switchToFile(fileId);
+            updateFileList();
+            
+            console.log(`File created successfully: ${filename}`);
+        }
+
+        function switchToFile(fileId) {
+            if (!editor) {
+                return;
+            }
+            
+            // Save current file content
+            if (activeFile && openFiles.has(activeFile)) {
+                openFiles.get(activeFile).content = editor.getValue();
+            }
+
+            // Switch to new file
+            activeFile = fileId;
+            const file = openFiles.get(fileId);
+            
+            if (file) {
+                editor.setValue(file.content);
+                monaco.editor.setModelLanguage(editor.getModel(), file.language);
+                
+                // Update active tab
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.getAttribute('data-file') === fileId) {
+                        tab.classList.add('active');
+                    }
+                });
+                
+                // Update file list active state
+                document.querySelectorAll('.file-item').forEach(item => {
+                    item.classList.remove('active');
+                });
+                const activeItem = document.querySelector(`[data-file-id="${fileId}"]`);
+                if (activeItem) {
+                    activeItem.classList.add('active');
+                }
+                
+                // Update mobile tabs active state
+                document.querySelectorAll('.mobile-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.getAttribute('data-file-id') === fileId) {
+                        tab.classList.add('active');
+                    }
+                });
+                
+                // Update run button state
+                updateRunButton();
+            }
+        }
+
+        function closeFile(fileId) {
+            if (openFiles.size <= 1) return; // Keep at least one file open
+            
+            openFiles.delete(fileId);
+            document.querySelector(`[data-file="${fileId}"]`).remove();
+            
+            if (activeFile === fileId) {
+                const remainingFiles = Array.from(openFiles.keys());
+                switchToFile(remainingFiles[0]);
+            }
+            
+            updateFileList();
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            const mobileTabs = document.querySelector('.mobile-tabs');
+            
+            fileList.innerHTML = '';
+            mobileTabs.innerHTML = '';
+            
+            openFiles.forEach((file, fileId) => {
+                if (fileId === 'welcome') return;
+                
+                // Desktop file list
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.setAttribute('data-file-id', fileId);
+                fileItem.innerHTML = `
+                    <div class="file-icon">📄</div>
+                    <span>${file.name}</span>
+                `;
+                fileItem.onclick = () => switchToFile(fileId);
+                fileList.appendChild(fileItem);
+                
+                // Mobile tabs
+                const mobileTab = document.createElement('button');
+                mobileTab.className = 'mobile-tab';
+                mobileTab.setAttribute('data-file-id', fileId);
+                mobileTab.textContent = file.name;
+                mobileTab.onclick = () => switchToFile(fileId);
+                if (fileId === activeFile) {
+                    mobileTab.classList.add('active');
+                }
+                mobileTabs.appendChild(mobileTab);
+            });
+        }
+
+        function detectLanguage(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            const langMap = {
+                'py': 'python',
+                'js': 'javascript',
+                'ts': 'typescript',
+                'html': 'html',
+                'css': 'css',
+                'java': 'java',
+                'cpp': 'cpp',
+                'c': 'c',
+                'php': 'php',
+                'rb': 'ruby',
+                'go': 'go',
+                'rs': 'rust',
+                'sql': 'sql',
+                'json': 'json',
+                'xml': 'xml',
+                'md': 'markdown'
+            };
+            return langMap[ext] || 'plaintext';
+        }
+
+        async function saveFileToBackend(filename, content, language) {
+            try {
+                await fetch('/create_file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename, content, language })
+                });
+            } catch (error) {
+                console.error('Failed to save file:', error);
+            }
+        }
+
+        // Chat functionality
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addChatMessage(message, true);
+            input.value = '';
+            
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                hideTypingIndicator();
+
+                if (response.ok) {
+                    addChatMessage(data.response, false);
+                    // Auto-create files from code blocks
+                    console.log('AI Response:', data.response);
+                    extractAndCreateFiles(data.response);
+                } else {
+                    addChatMessage(`Error: ${data.error}`, false);
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                addChatMessage(`Failed to connect: ${error.message}`, false);
+            }
+        }
+
+        function addChatMessage(content, isUser) {
+            const chatMessages = document.getElementById('chatMessages');
+            const message = document.createElement('div');
+            message.className = `message ${isUser ? 'user' : 'ai'}`;
+            
+            if (isUser) {
+                message.innerHTML = `<strong>You:</strong> ${content}`;
+            } else {
+                message.innerHTML = `<strong>DevCoder AI:</strong> ${parseMarkdown(content)}`;
+            }
+            
+            chatMessages.appendChild(message);
+            // Auto-scroll to bottom
+            setTimeout(() => {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 100);
+        }
+
+        function showTypingIndicator() {
+            const chatMessages = document.getElementById('chatMessages');
+            const indicator = document.createElement('div');
+            indicator.id = 'typingIndicator';
+            indicator.className = 'typing-indicator';
+            indicator.innerHTML = `
+                DevCoder AI is coding...
+                <div class="typing-dots">
+                    <div></div><div></div><div></div>
+                </div>
+            `;
+            chatMessages.appendChild(indicator);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        function extractAndCreateFiles(response) {
+            console.log('Extracting files from response...');
+            
+            // Check if user is asking for code execution help or just wants to chat
+            const isExecutionQuery = response.toLowerCase().includes('run') || 
+                                   response.toLowerCase().includes('execute') || 
+                                   response.toLowerCase().includes('output');
+            
+            if (isExecutionQuery) {
+                console.log('Skipping file creation - this seems to be about execution');
+                return;
+            }
+            
+            // Extract code blocks from markdown
+            const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+            let match;
+            let foundCodeBlocks = false;
+            
+            // Only create one main file from the largest/most complete code block
+            let bestMatch = null;
+            let maxLength = 0;
+
+            while ((match = codeBlockRegex.exec(response)) !== null) {
+                foundCodeBlocks = true;
+                const language = match[1] || 'plaintext';
+                const code = match[2].trim();
+                
+                console.log(`Found code block: ${language}, length: ${code.length}`);
+                
+                if (code.length > maxLength && code.length > 50) {
+                    maxLength = code.length;
+                    bestMatch = { language, code };
+                }
+            }
+            
+            // Create only one file from the best match
+            if (bestMatch) {
+                const ext = getExtensionForLanguage(bestMatch.language);
+                const filename = `main${ext}`;
+                console.log(`Creating single file: ${filename}`);
+                createFile(filename, bestMatch.code, bestMatch.language);
+            } else if (!foundCodeBlocks) {
+                console.log('No code blocks found in response');
+            }
+        }
+
+        function parseMarkdown(content) {
+            // Simple markdown parsing for code blocks
+            return content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+                return `<pre><code class="language-${lang || 'plaintext'}">${code.trim()}</code></pre>`;
+            }).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              .replace(/\*(.*?)\*/g, '<em>$1</em>')
+              .replace(/\n/g, '<br>');
+        }
+
+        function getExtensionForLanguage(language) {
+            const extMap = {
+                'python': '.py',
+                'javascript': '.js',
+                'typescript': '.ts',
+                'html': '.html',
+                'css': '.css',
+                'java': '.java',
+                'cpp': '.cpp',
+                'c': '.c',
+                'php': '.php',
+                'ruby': '.rb',
+                'go': '.go',
+                'rust': '.rs',
+                'sql': '.sql'
+            };
+            return extMap[language] || '.txt';
+        }
+
+        // Mode switching function
+        function switchMode() {
+            window.location.href = '/chat';
+        }
+
+        // Code execution functions
+        async function runCode() {
+            if (!editor) {
+                alert('Editor not initialized!');
+                return;
+            }
+            
+            const code = editor.getValue();
+            const currentFile = openFiles.get(activeFile);
+            const language = currentFile ? currentFile.language : detectLanguageFromContent(code);
+            
+            if (!code.trim()) {
+                alert('No code to run!');
+                return;
+            }
+            
+            if (language !== 'python' && language !== 'javascript') {
+                alert(`Cannot execute ${language} code. Only Python and JavaScript are supported.`);
+                return;
+            }
+            
+            const runBtn = document.getElementById('runCodeBtn');
+            runBtn.disabled = true;
+            runBtn.textContent = '⏳ Running...';
+            
+            // Show floating terminal
+            showTerminal();
+            
+            const terminalContent = document.getElementById('terminalContent');
+            terminalContent.textContent = `$ Running ${language} code...\n\n`;
+            
+            try {
+                const response = await fetch('/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        language: language
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    let output = '';
+                    if (result.output) {
+                        output += result.output;
+                    } else {
+                        output += '(No output)';
+                    }
+                    
+                    if (result.error) {
+                        output += '\n\nERROR:\n' + result.error;
+                    }
+                    
+                    terminalContent.textContent = output;
+                } else {
+                    terminalContent.textContent = 'ERROR: ' + (result.error || 'Unknown error occurred');
+                }
+            } catch (error) {
+                terminalContent.textContent = 'NETWORK ERROR: ' + error.message + '\n\nMake sure your Flask server is running!';
+            }
+            
+            runBtn.disabled = false;
+            runBtn.textContent = '▶ Run Code';
+        }
+        
+        // Terminal functions
+        function showTerminal() {
+            const terminal = document.getElementById('terminalWindow');
+            terminal.style.display = 'block';
+        }
+        
+        function closeTerminal() {
+            const terminal = document.getElementById('terminalWindow');
+            terminal.style.display = 'none';
+        }
+        
+        function minimizeTerminal() {
+            const terminal = document.getElementById('terminalWindow');
+            const content = terminal.querySelector('.terminal-content');
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                terminal.style.height = '300px';
+            } else {
+                content.style.display = 'none';
+                terminal.style.height = '40px';
+            }
+        }
+        
+        // Make terminal draggable
+        let isDragging = false;
+        let dragOffset = { x: 0, y: 0 };
+        
+        // Mobile detection and warning
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   window.innerWidth <= 768;
+        }
+        
+        function showMobileWarning() {
+            const warningHTML = `
+                <div style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(30, 30, 30, 0.95));
+                    backdrop-filter: blur(10px);
+                    z-index: 10000;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    animation: fadeIn 0.3s ease-out;
+                ">
+                    <style>
+                        @keyframes fadeIn {
+                            from { opacity: 0; }
+                            to { opacity: 1; }
+                        }
+                        @keyframes slideUp {
+                            from { transform: translateY(30px); opacity: 0; }
+                            to { transform: translateY(0); opacity: 1; }
+                        }
+                        @keyframes pulse {
+                            0%, 100% { transform: scale(1); }
+                            50% { transform: scale(1.1); }
+                        }
+                        .warning-modal {
+                            animation: slideUp 0.4s ease-out;
+                        }
+                        .warning-icon {
+                            animation: pulse 2s infinite;
+                        }
+                        .warning-btn {
+                            transition: all 0.3s ease;
+                            transform: translateY(0);
+                        }
+                        .warning-btn:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                        }
+                        .warning-btn:active {
+                            transform: translateY(0);
+                        }
+                    </style>
+                    <div class="warning-modal" style="
+                        background: linear-gradient(145deg, #1e1e1e, #2d2d30);
+                        border: 1px solid #4a9eff;
+                        border-radius: 20px;
+                        padding: 40px 30px;
+                        max-width: 90%;
+                        width: 400px;
+                        text-align: center;
+                        box-shadow: 
+                            0 20px 60px rgba(0, 0, 0, 0.7),
+                            0 0 0 1px rgba(74, 158, 255, 0.3),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <div style="
+                            position: absolute;
+                            top: -50%;
+                            left: -50%;
+                            width: 200%;
+                            height: 200%;
+                            background: radial-gradient(circle, rgba(74, 158, 255, 0.1) 0%, transparent 70%);
+                            pointer-events: none;
+                        "></div>
+                        
+                        <div class="warning-icon" style="
+                            font-size: 64px; 
+                            margin-bottom: 25px;
+                            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                        ">📱</div>
+                        
+                        <h2 style="
+                            color: #ffffff;
+                            margin: 0 0 10px 0;
+                            font-size: 28px;
+                            font-weight: 700;
+                            background: linear-gradient(45deg, #4a9eff, #00d4ff);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                        ">
+                            Mobile Device Detected
+                        </h2>
+                        
+                        <div style="
+                            width: 60px;
+                            height: 3px;
+                            background: linear-gradient(90deg, #4a9eff, #00d4ff);
+                            margin: 0 auto 25px auto;
+                            border-radius: 2px;
+                        "></div>
+                        
+                        <p style="
+                            color: #b8b8b8;
+                            margin: 0 0 30px 0;
+                            font-size: 16px;
+                            line-height: 1.6;
+                            font-weight: 400;
+                        ">
+                            This code editor is optimized for desktop experience.<br>
+                            <span style="color: #4a9eff; font-weight: 500;">Switch to laptop/desktop</span> for the best coding experience.
+                        </p>
+                        
+                        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                            <button onclick="window.location.href='/'" class="warning-btn" style="
+                                background: linear-gradient(45deg, #00c851, #00ff88);
+                                color: #000;
+                                border: none;
+                                padding: 14px 28px;
+                                border-radius: 12px;
+                                cursor: pointer;
+                                font-size: 15px;
+                                font-weight: 600;
+                                letter-spacing: 0.5px;
+                                box-shadow: 0 4px 15px rgba(0, 200, 81, 0.3);
+                            ">
+                                📱 Use Chat Mode
+                            </button>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" class="warning-btn" style="
+                                background: linear-gradient(45deg, #ff4757, #ff6b7a);
+                                color: white;
+                                border: none;
+                                padding: 14px 28px;
+                                border-radius: 12px;
+                                cursor: pointer;
+                                font-size: 15px;
+                                font-weight: 600;
+                                letter-spacing: 0.5px;
+                                box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+                            ">
+                                💻 Continue Anyway
+                            </button>
+                        </div>
+                        
+                        <p style="
+                            color: #666;
+                            margin: 25px 0 0 0;
+                            font-size: 12px;
+                            font-style: italic;
+                        ">
+                            Best experienced on screens ≥ 1024px wide
+                        </p>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', warningHTML);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for mobile device and show warning
+            if (isMobileDevice()) {
+                showMobileWarning();
+            }
+            
+            const terminalHeader = document.getElementById('terminalHeader');
+            const terminal = document.getElementById('terminalWindow');
+            
+            if (terminalHeader && terminal) {
+                terminalHeader.addEventListener('mousedown', function(e) {
+                    isDragging = true;
+                    const rect = terminal.getBoundingClientRect();
+                    dragOffset.x = e.clientX - rect.left;
+                    dragOffset.y = e.clientY - rect.top;
+                    document.addEventListener('mousemove', drag);
+                    document.addEventListener('mouseup', stopDrag);
+                });
+                
+                function drag(e) {
+                    if (!isDragging) return;
+                    terminal.style.left = (e.clientX - dragOffset.x) + 'px';
+                    terminal.style.top = (e.clientY - dragOffset.y) + 'px';
+                    terminal.style.right = 'auto';
+                    terminal.style.bottom = 'auto';
+                }
+                
+                function stopDrag() {
+                    isDragging = false;
+                    document.removeEventListener('mousemove', drag);
+                    document.removeEventListener('mouseup', stopDrag);
+                }
+            }
+        });
+        
+        function detectLanguageFromContent(code) {
+            // Simple language detection based on code content
+            if (code.includes('def ') || code.includes('import ') || code.includes('print(')) {
+                return 'python';
+            }
+            if (code.includes('function ') || code.includes('console.log') || code.includes('const ') || code.includes('let ')) {
+                return 'javascript';
+            }
+            return 'python'; // default
+        }
+        
+        // Update run button state when switching files
+        function updateRunButton() {
+            const runBtn = document.getElementById('runCodeBtn');
+            if (!runBtn) return;
+            
+            const currentFile = openFiles.get(activeFile);
+            
+            if (currentFile && currentFile.name !== 'Welcome') {
+                const language = currentFile.language;
+                if (language === 'python' || language === 'javascript') {
+                    runBtn.disabled = false;
+                    runBtn.title = `Run ${language} code`;
+                } else {
+                    runBtn.disabled = true;
+                    runBtn.title = `${language} execution not supported`;
+                }
+            } else {
+                runBtn.disabled = true;
+                runBtn.title = 'No executable file selected';
+            }
+        }
+
+        // Simple test function
+        function testRunCode() {
+            alert('Run Code button clicked! Editor exists: ' + (editor ? 'YES' : 'NO'));
+            if (editor) {
+                const code = editor.getValue();
+                alert('Code in editor: ' + code.substring(0, 50) + '...');
+                runCode();
+            }
+        }
+
+        // Enter key support for chat
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

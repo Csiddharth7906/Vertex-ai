@@ -3,6 +3,7 @@ import requests
 import json
 import os
 from dotenv import load_dotenv
+import re
 
 # Load environment variables
 load_dotenv()
@@ -21,6 +22,10 @@ def index():
 def chat_page():
     return render_template('chat.html')
 
+@app.route('/editor')
+def editor_page():
+    return render_template('editor.html')
+
 @app.route('/chat', methods=['POST'])
 def chat():
     try:
@@ -36,60 +41,75 @@ def chat():
         }
         
         payload = {
-            "model": "llama-3.1-70b-versatile",
+            "model": "llama-3.1-8b-instant",
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are an advanced AI assistant created by Siddharth Chauhan. You have deep knowledge across all domains and provide detailed, accurate, and helpful responses. Be conversational yet professional. When asked about your creator, mention that you were built by Siddharth Chauhan, a talented developer who created this VertexAI chatbot. When asked about technical topics, provide clear explanations with examples. Always aim to be genuinely helpful and informative."
+                    "content": "You are DevCoder AI, an advanced coding assistant created by Siddharth Chauhan. You specialize in helping developers with programming tasks, code reviews, debugging, and technical solutions. IMPORTANT BEHAVIOR: 1) If a user asks for code but doesn't specify a programming language, ask them which language they prefer (Python, JavaScript, Java, C++, etc.) 2) Always format code properly using markdown code blocks with appropriate language syntax highlighting (```python, ```javascript, etc.) 3) When providing substantial code examples, suggest creating files and ask if they want you to save the code 4) Provide clear, structured responses with: Brief explanation, Code examples, Best practices or tips 5) When asked about your creator, mention you were built by Siddharth Chauhan. Focus on practical, actionable coding solutions and maintain professional developer communication style."
                 },
                 {
                     "role": "user",
                     "content": user_message
                 }
             ],
-            "max_tokens": 300,
+            "max_tokens": 800,
             "temperature": 0.8
         }
         
         try:
-            response = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=10)
+            response = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=15)
+            print(f"Primary model response: {response.status_code}")
             
             if response.status_code == 200:
                 result = response.json()
                 bot_response = result['choices'][0]['message']['content'].strip()
+                print(f"Got response: {bot_response[:100]}...")
             else:
-                # Debug the 400 error by showing response details
-                print(f"API Response Status: {response.status_code}")
-                print(f"API Response Text: {response.text}")
-                raise Exception(f"API error {response.status_code}: {response.text}")
+                print(f"Primary API error: {response.text}")
+                raise Exception(f"Primary API failed: {response.status_code}")
                     
         except Exception as groq_error:
-            # If this model fails too, try another one
-            try:
-                payload["model"] = "llama-3.1-8b-instant"
-                response = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=10)
-                if response.status_code == 200:
-                    result = response.json()
-                    bot_response = result['choices'][0]['message']['content'].strip()
-                else:
-                    raise Exception("All models failed")
-            except:
+            print(f"Primary model failed: {groq_error}")
+            # Try alternative models
+            alternative_models = ["gemma2-9b-it", "mixtral-8x7b-32768", "llama3-groq-70b-8192-tool-use-preview"]
+            
+            for alt_model in alternative_models:
+                try:
+                    print(f"Trying alternative model: {alt_model}")
+                    payload["model"] = alt_model
+                    response = requests.post(GROQ_API_URL, headers=headers, json=payload, timeout=15)
+                    print(f"Alternative model {alt_model} response: {response.status_code}")
+                    
+                    if response.status_code == 200:
+                        result = response.json()
+                        bot_response = result['choices'][0]['message']['content'].strip()
+                        print(f"Success with {alt_model}: {bot_response[:100]}...")
+                        break
+                    else:
+                        print(f"Model {alt_model} failed: {response.text}")
+                        continue
+                except Exception as e:
+                    print(f"Model {alt_model} exception: {e}")
+                    continue
+            else:
+                print("All API models failed, using fallback responses")
                 # Enhanced intelligent fallback responses
                 import random
                 user_lower = user_message.lower()
+                bot_response = "I'm having trouble connecting to the AI models right now. Let me help you with some basic coding assistance. What programming language would you like to work with?"
                 
                 # Check for creator-related questions first
                 if any(word in user_lower for word in ['who made you', 'who created you', 'creator', 'developer', 'built you', 'siddharth', 'chauhan']):
                     responses = [
-                        "I was created by Siddharth Chauhan, a talented developer who built this VertexAI chatbot! He designed me to be helpful, intelligent, and provide great conversations. Siddharth put a lot of effort into making me both functional and visually appealing.",
-                        "My creator is Siddharth Chauhan! He's the developer behind this VertexAI chatbot. Siddharth built me using Flask, integrated me with advanced AI models, and created this beautiful interface you're using right now.",
-                        "I'm the creation of Siddharth Chauhan, a skilled developer who wanted to build an advanced AI chatbot. He designed both my functionality and this professional VertexAI interface. Pretty cool, right?"
+                        "I'm DevCoder AI, created by Siddharth Chauhan - a skilled developer who built me as a specialized coding assistant. I'm designed to help with programming tasks, code reviews, debugging, and technical solutions using Flask and AI integration.",
+                        "My creator is Siddharth Chauhan! He developed me as DevCoder AI to assist developers with coding challenges. Built with Flask and integrated with advanced AI models, I focus on providing structured code solutions and technical guidance.",
+                        "I was built by Siddharth Chauhan as DevCoder AI - your dedicated coding companion. He designed me to understand developer needs and provide practical, well-formatted code solutions with proper syntax highlighting."
                     ]
-                elif any(word in user_lower for word in ['python', 'javascript', 'code', 'programming', 'html', 'css', 'react', 'nodejs']):
+                elif any(word in user_lower for word in ['python', 'javascript', 'code', 'programming', 'html', 'css', 'react', 'nodejs', 'function', 'class', 'variable', 'loop', 'array', 'object']):
                     responses = [
-                        f"Great question about {user_message}! Programming is fascinating. Let me help you understand this concept with practical examples and best practices.",
-                        f"I'd be happy to explain {user_message}! This is an important topic in software development. Here's what you need to know...",
-                        f"Excellent choice asking about {user_message}! This technology/concept is widely used. Let me break it down for you with clear explanations."
+                        "Let me help you with coding! Here's a practical example with proper formatting and best practices.",
+                        "Great programming question! I'll provide you with clean, well-structured code examples and explanations.",
+                        "I'll show you how to implement this with proper syntax highlighting and developer-friendly formatting."
                     ]
                 elif any(word in user_lower for word in ['ai', 'artificial intelligence', 'machine learning', 'neural network', 'deep learning']):
                     responses = [
@@ -120,6 +140,138 @@ def chat():
         
     except Exception as e:
         return jsonify({'error': f'An error occurred: {str(e)}'}), 500
+
+@app.route('/create_file', methods=['POST'])
+def create_file():
+    try:
+        data = request.json
+        filename = data.get('filename')
+        content = data.get('content')
+        language = data.get('language', '')
+        
+        if not filename or not content:
+            return jsonify({'error': 'Filename and content are required'}), 400
+        
+        # Create generated_code directory if it doesn't exist
+        code_dir = os.path.join(os.getcwd(), 'generated_code')
+        if not os.path.exists(code_dir):
+            os.makedirs(code_dir)
+        
+        # Add appropriate file extension based on language
+        extensions = {
+            'python': '.py',
+            'javascript': '.js',
+            'java': '.java',
+            'cpp': '.cpp',
+            'c++': '.cpp',
+            'html': '.html',
+            'css': '.css',
+            'sql': '.sql',
+            'php': '.php',
+            'ruby': '.rb',
+            'go': '.go',
+            'rust': '.rs',
+            'typescript': '.ts'
+        }
+        
+        # Add extension if not present
+        if language.lower() in extensions and not filename.endswith(extensions[language.lower()]):
+            filename += extensions[language.lower()]
+        
+        file_path = os.path.join(code_dir, filename)
+        
+        # Write content to file
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        
+        return jsonify({
+            'success': True,
+            'message': f'File created successfully: {filename}',
+            'path': file_path
+        })
+        
+    except Exception as e:
+        return jsonify({'error': f'Failed to create file: {str(e)}'}), 500
+
+@app.route('/list_files', methods=['GET'])
+def list_files():
+    try:
+        code_dir = os.path.join(os.getcwd(), 'generated_code')
+        if not os.path.exists(code_dir):
+            os.makedirs(code_dir)
+        files = []
+        generated_dir = 'generated_code'
+        if os.path.exists(generated_dir):
+            for filename in os.listdir(generated_dir):
+                if os.path.isfile(os.path.join(generated_dir, filename)):
+                    files.append(filename)
+        return jsonify({'files': files})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/execute', methods=['POST'])
+def execute_code():
+    try:
+        data = request.json
+        code = data.get('code', '')
+        language = data.get('language', 'python')
+        
+        if not code.strip():
+            return jsonify({'error': 'No code provided'}), 400
+            
+        # Create a temporary file
+        import tempfile
+        import subprocess
+        
+        if language == 'python':
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                f.write(code)
+                temp_file = f.name
+            
+            try:
+                result = subprocess.run(['python', temp_file], 
+                                      capture_output=True, 
+                                      text=True, 
+                                      timeout=10)
+                output = result.stdout
+                error = result.stderr
+                
+                if result.returncode == 0:
+                    return jsonify({'output': output, 'error': None})
+                else:
+                    return jsonify({'output': output, 'error': error})
+            finally:
+                os.unlink(temp_file)
+                
+        elif language == 'javascript':
+            # For JavaScript, we'll use Node.js if available
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False) as f:
+                f.write(code)
+                temp_file = f.name
+            
+            try:
+                result = subprocess.run(['node', temp_file], 
+                                      capture_output=True, 
+                                      text=True, 
+                                      timeout=10)
+                output = result.stdout
+                error = result.stderr
+                
+                if result.returncode == 0:
+                    return jsonify({'output': output, 'error': None})
+                else:
+                    return jsonify({'output': output, 'error': error})
+            except FileNotFoundError:
+                return jsonify({'error': 'Node.js not installed. JavaScript execution requires Node.js.'}), 400
+            finally:
+                os.unlink(temp_file)
+        else:
+            return jsonify({'error': f'Language {language} not supported for execution'}), 400
+            
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Code execution timed out (10 seconds limit)'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Execution error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     import os
