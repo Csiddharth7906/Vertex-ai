@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chat - VertexAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'vertex-green': '#00D084',
+                        'dark-bg': '#0A0E0F',
+                        'dark-card': '#1A1F23',
+                        'dark-border': '#2A3037'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: #0A0E0F;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(0, 208, 132, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 208, 132, 0.05) 0%, transparent 50%);
+            background-attachment: fixed;
+        }
+        
+        .ai-icon {
+            background: linear-gradient(135deg, #00D084 0%, #39FF14 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #000;
+        }
+        
+        .neon-glow {
+            box-shadow: 0 0 15px rgba(0, 208, 132, 0.3);
+        }
+        
+        .chat-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-scroll::-webkit-scrollbar-track {
+            background: #1A1F23;
+            border-radius: 4px;
+        }
+        
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: #00D084;
+            border-radius: 4px;
+        }
+        
+        .chat-scroll::-webkit-scrollbar-thumb:hover {
+            background: #39FF14;
+        }
+        
+        .message-animation {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="bg-dark-card/90 backdrop-blur-sm border-b border-dark-border sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-3">
+                    <button onclick="goBack()" class="text-gray-400 hover:text-vertex-green transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </button>
+                    <div class="w-8 h-8 ai-icon">
+                        <span class="text-sm">AI</span>
+                    </div>
+                    <div>
+                        <h1 class="text-white font-semibold">AI Assistant</h1>
+                        <p class="text-vertex-green text-xs">Online</p>
+                    </div>
+                </div>
+                <button onclick="clearChat()" class="bg-dark-border hover:bg-vertex-green hover:text-black text-vertex-green px-4 py-2 rounded-lg text-sm transition-colors border border-vertex-green/50">
+                    Clear Chat
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Chat Container -->
+    <div class="max-w-4xl mx-auto px-6 flex flex-col" style="height: calc(100vh - 80px);">
+        <!-- Chat Messages -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto chat-scroll space-y-4 py-4">
+            <div class="flex items-start space-x-3 message-animation">
+                <div class="w-10 h-10 ai-icon flex-shrink-0">
+                    <span>AI</span>
+                </div>
+                <div class="bg-dark-card rounded-2xl p-4 max-w-2xl border border-vertex-green/20">
+                    <p class="text-gray-200 leading-relaxed">
+                        Hello! I'm your AI assistant. I'm here to help you with any questions, provide information, solve problems, or just have a conversation. What would you like to talk about today?
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Input -->
+        <div class="bg-dark-card/80 backdrop-blur-sm rounded-2xl border border-dark-border p-4 neon-glow mt-4">
+            <div class="flex space-x-4">
+                <input 
+                    type="text" 
+                    id="messageInput" 
+                    placeholder="Type your message here..." 
+                    class="flex-1 bg-dark-border border border-vertex-green/30 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:border-vertex-green focus:ring-2 focus:ring-vertex-green/20 transition-all"
+                    autocomplete="off"
+                >
+                <button 
+                    id="sendButton" 
+                    class="bg-vertex-green hover:bg-vertex-green/80 text-black px-6 py-3 rounded-xl font-medium transition-colors neon-glow flex items-center space-x-2"
+                >
+                    <span>Send</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chatMessages');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        function goBack() {
+            window.location.href = '/';
+        }
+
+        function clearChat() {
+            chatMessages.innerHTML = `
+                <div class="flex items-start space-x-3 message-animation">
+                    <div class="w-10 h-10 ai-icon flex-shrink-0">
+                        <span>AI</span>
+                    </div>
+                    <div class="bg-dark-card rounded-2xl p-4 max-w-2xl border border-vertex-green/20">
+                        <p class="text-gray-200 leading-relaxed">
+                            Hello! I'm your AI assistant. I'm here to help you with any questions, provide information, solve problems, or just have a conversation. What would you like to talk about today?
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function addMessage(content, isUser = false, isError = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'flex items-start space-x-3 message-animation';
+            
+            if (isUser) {
+                messageDiv.className = 'flex items-start space-x-3 justify-end message-animation';
+                messageDiv.innerHTML = `
+                    <div class="bg-vertex-green rounded-2xl p-4 max-w-2xl">
+                        <p class="text-black leading-relaxed font-medium">${content}</p>
+                    </div>
+                    <div class="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span class="text-white font-bold">U</span>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="w-10 h-10 ai-icon flex-shrink-0">
+                        <span>AI</span>
+                    </div>
+                    <div class="bg-dark-card rounded-2xl p-4 max-w-2xl border ${isError ? 'border-red-500' : 'border-vertex-green/20'}">
+                        <p class="text-gray-200 leading-relaxed">${content}</p>
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'flex items-start space-x-3 message-animation';
+            typingDiv.innerHTML = `
+                <div class="w-10 h-10 ai-icon flex-shrink-0">
+                    <span>AI</span>
+                </div>
+                <div class="bg-dark-card rounded-2xl p-4 border border-vertex-green/20">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex space-x-1">
+                            <div class="w-2 h-2 bg-vertex-green rounded-full animate-bounce"></div>
+                            <div class="w-2 h-2 bg-vertex-green rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                            <div class="w-2 h-2 bg-vertex-green rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                        </div>
+                        <p class="text-vertex-green text-sm italic">AI is typing...</p>
+                    </div>
+                </div>
+            `;
+            chatMessages.appendChild(typingDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typing-indicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            addMessage(message, true);
+            messageInput.value = '';
+            sendButton.disabled = true;
+            
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                hideTypingIndicator();
+
+                if (response.ok) {
+                    addMessage(data.response);
+                } else {
+                    addMessage(data.error || 'An error occurred', false, true);
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                addMessage('Failed to connect to the server. Please try again.', false, true);
+            }
+
+            sendButton.disabled = false;
+            messageInput.focus();
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Focus on input when page loads
+        messageInput.focus();
+    </script>
+</body>
+</html>

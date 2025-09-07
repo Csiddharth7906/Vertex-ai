@@ -1,0 +1,11 @@
+[build]
+  publish = "."
+  command = "echo 'No build command required for Flask app'"
+
+[build.environment]
+  PYTHON_VERSION = "3.9"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
