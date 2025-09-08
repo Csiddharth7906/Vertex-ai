@@ -3,42 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apple Landing Page</title>
+    <title>Login and Signup Page</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <header>
-        <nav>
-            <ul>
-                <li><a href="#">Home</a></li>
-                <li><a href="#">Products</a></li>
-                <li><a href="#">About</a></li>
-                <li><a href="#">Contact</a></li>
-            </ul>
-        </nav>
-    </header>
-    <main>
-        <section class="hero">
-            <h1>Welcome to Apple</h1>
-            <p>Experience the future of technology</p>
-            <button>Learn More</button>
-        </section>
-        <section class="features">
-            <h2>Our Features</h2>
-            <ul>
-                <li><i class="fas fa-lock"></i> Secure and Private</li>
-                <li><i class="fas fa-bolt"></i> Fast and Reliable</li>
-                <li><i class="fas fa-cog"></i> Easy to Use</li>
-            </ul>
-        </section>
-        <section class="call-to-action">
-            <h2>Get Started Today!</h2>
-            <button>Sign Up</button>
-        </section>
-    </main>
-    <footer>
-        <p>&copy; 2023 Apple Inc.</p>
-    </footer>
+    <div class="container">
+        <h1>Login and Signup Page</h1>
+        <div class="login-signup">
+            <div class="login">
+                <h2>Login</h2>
+                <form id="login-form">
+                    <input type="email" id="email" placeholder="Email">
+                    <input type="password" id="password" placeholder="Password">
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+            <div class="signup">
+                <h2>Signup</h2>
+                <form id="signup-form">
+                    <input type="text" id="name" placeholder="Name">
+                    <input type="email" id="email" placeholder="Email">
+                    <input type="password" id="password" placeholder="Password">
+                    <button type="submit">Signup</button>
+                </form>
+            </div>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>

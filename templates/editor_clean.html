@@ -243,8 +243,8 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 500px;
-            height: 300px;
+            width: 600px;
+            height: 400px;
             background: #1e1e1e;
             border: 1px solid #3e3e42;
             border-radius: 8px;
@@ -253,13 +253,49 @@
             z-index: 1000;
             resize: both;
             overflow: hidden;
-            min-width: 300px;
-            min-height: 200px;
+            min-width: 400px;
+            min-height: 250px;
+        }
+        
+        .terminal-tabs {
+            display: flex;
+            background: #2d2d30;
+            border-bottom: 1px solid #3e3e42;
+            overflow-x: auto;
+        }
+        
+        .terminal-tab {
+            padding: 6px 12px;
+            background: #2d2d30;
+            color: #cccccc;
+            border-right: 1px solid #3e3e42;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-width: 80px;
+        }
+        
+        .terminal-tab.active {
+            background: #1e1e1e;
+            color: #ffffff;
+        }
+        
+        .terminal-tab-close {
+            color: #888;
+            font-weight: bold;
+            margin-left: 4px;
+        }
+        
+        .terminal-tab-close:hover {
+            color: #fff;
         }
         
         .terminal-header {
             background: #2d2d30;
-            padding: 8px 12px;
+            padding: 6px 12px;
             border-bottom: 1px solid #3e3e42;
             display: flex;
             justify-content: space-between;
@@ -296,15 +332,84 @@
         }
         
         .terminal-content {
-            height: calc(100% - 40px);
-            padding: 12px;
-            overflow-y: auto;
+            height: calc(100% - 75px);
+            padding: 0;
+            overflow: hidden;
             font-family: 'Consolas', 'Monaco', monospace;
             font-size: 12px;
             color: #d4d4d4;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .terminal-output {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
             white-space: pre-wrap;
             word-wrap: break-word;
-            max-width: 100%;
+            background: #1e1e1e;
+        }
+        
+        .terminal-input-line {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #2d2d30;
+            border-top: 1px solid #3e3e42;
+        }
+        
+        .terminal-controls-extra {
+            display: flex;
+            gap: 4px;
+            margin-left: 8px;
+        }
+        
+        .terminal-control-btn {
+            background: #404040;
+            border: none;
+            color: #cccccc;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .terminal-control-btn:hover {
+            background: #505050;
+        }
+        
+        .terminal-control-btn.terminate {
+            background: #ff4757;
+            color: white;
+        }
+        
+        .terminal-control-btn.terminate:hover {
+            background: #ff3742;
+        }
+        
+        .terminal-prompt {
+            color: #00ff00;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .terminal-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            min-height: 20px;
+            padding: 2px 0;
+        }
+        
+        .terminal-input:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.05);
         }
         
         .terminal-content::-webkit-scrollbar {
@@ -602,6 +707,9 @@
                     <button id="runCodeBtn" onclick="runCode()" class="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg">
                         ▶ Run Code
                     </button>
+                    <button id="terminalBtn" onclick="toggleTerminal()" class="bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-500 hover:to-purple-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg">
+                        🖥️ Terminal
+                    </button>
                     <button id="previewBtn" onclick="previewSite()" class="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg" style="display: none;">
                         🌐 Preview Site
                     </button>
@@ -613,13 +721,37 @@
         <!-- Floating Terminal Window -->
         <div id="terminalWindow" class="terminal-window">
             <div class="terminal-header" id="terminalHeader">
-                <div class="terminal-title">🖥️ Terminal Output</div>
+                <div class="terminal-title">🖥️ Terminal</div>
                 <div class="terminal-controls">
+                    <button class="terminal-control-btn" onclick="newTerminalTab()" title="New Terminal">+</button>
                     <button class="terminal-btn terminal-minimize" onclick="minimizeTerminal()"></button>
                     <button class="terminal-btn terminal-close" onclick="closeTerminal()"></button>
                 </div>
             </div>
-            <div class="terminal-content" id="terminalContent"></div>
+            
+            <!-- Terminal Tabs -->
+            <div class="terminal-tabs" id="terminalTabs">
+                <div class="terminal-tab active" data-terminal-id="terminal1">
+                    <span>Terminal 1</span>
+                    <span class="terminal-tab-close" onclick="closeTerminalTab('terminal1')">×</span>
+                </div>
+            </div>
+            
+            <div class="terminal-content" id="terminalContent">
+                <div class="terminal-output" id="terminalOutput">Welcome to DevCoder Terminal! 🚀
+Type commands like: pip install pygame, npm install express, python --version
+Press Ctrl+C to terminate running commands
+
+</div>
+                <div class="terminal-input-line">
+                    <span class="terminal-prompt">$ </span>
+                    <input type="text" id="terminalInput" class="terminal-input" placeholder="Type your command here and press Enter..." autocomplete="off" spellcheck="false">
+                    <div class="terminal-controls-extra">
+                        <button class="terminal-control-btn terminate" onclick="terminateCommand()" title="Terminate (Ctrl+C)">Stop</button>
+                        <button class="terminal-control-btn" onclick="clearTerminal()" title="Clear">Clear</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Sidebar -->
@@ -706,36 +838,111 @@
         let openFiles = new Map();
         let activeFile = 'welcome';
         let fileCounter = 1;
+        
+        // Terminal management
+        let activeTerminalId = 'terminal1';
+        let terminalCounter = 1;
+        let terminals = new Map();
+        let runningCommands = new Map();
 
-        // Initialize Monaco Editor
+        // Initialize Monaco Editor with error handling and fallback
         function initializeEditor() {
-            require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.34.1/min/vs' }});
-            require(['vs/editor/editor.main'], function() {
-                editor = monaco.editor.create(document.getElementById('editor'), {
-                    value: `// Welcome To DevCoder AI
+            const editorContainer = document.getElementById('editor');
+            
+            try {
+                require.config({ paths: { 'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.44.0/min/vs' }});
+                
+                const loadTimeout = setTimeout(() => {
+                    console.warn('Monaco editor loading timeout, using fallback');
+                    createFallbackEditor();
+                }, 10000);
+                
+                require(['vs/editor/editor.main'], function() {
+                    clearTimeout(loadTimeout);
+                    
+                    try {
+                        editor = monaco.editor.create(editorContainer, {
+                            value: `// Welcome To DevCoder AI
 // Ask the AI assistant to create code and files will be automatically generated here
 // Try asking: "Create a Python web scraper" or "Build a React component"
 
 console.log("Welcome to DevCoder AI!");`,
-                    language: 'javascript',
-                    theme: 'vs-dark',
-                    automaticLayout: true,
-                    fontSize: 14,
-                    lineNumbers: 'on',
-                    minimap: { enabled: false },
-                    scrollBeyondLastLine: false,
-                    wordWrap: 'on'
-                });
+                            language: 'javascript',
+                            theme: 'vs-dark',
+                            automaticLayout: true,
+                            fontSize: 14,
+                            lineNumbers: 'on',
+                            minimap: { enabled: false },
+                            scrollBeyondLastLine: false,
+                            wordWrap: 'on',
+                            contextmenu: true,
+                            mouseWheelZoom: true
+                        });
 
-                // Store the welcome content
-                openFiles.set('welcome', {
-                    content: editor.getValue(),
-                    language: 'javascript'
+                        // Store the welcome content
+                        openFiles.set('welcome', {
+                            content: editor.getValue(),
+                            language: 'javascript',
+                            name: 'Welcome'
+                        });
+                        
+                        // Initialize splitters
+                        initializeSplitters();
+                        updateFileList();
+                        console.log('Monaco editor initialized successfully');
+                        
+                    } catch (monacoError) {
+                        console.error('Monaco editor creation failed:', monacoError);
+                        createFallbackEditor();
+                    }
+                }, function(err) {
+                    clearTimeout(loadTimeout);
+                    console.error('Monaco editor loading failed:', err);
+                    createFallbackEditor();
                 });
                 
-                // Initialize splitters
-                initializeSplitters();
+            } catch (error) {
+                console.error('Monaco editor initialization failed:', error);
+                createFallbackEditor();
+            }
+        }
+        
+        // Fallback textarea editor
+        function createFallbackEditor() {
+            const editorContainer = document.getElementById('editor');
+            editorContainer.innerHTML = `
+                <textarea 
+                    id="fallbackEditor" 
+                    class="w-full h-full bg-gray-900 text-white p-4 font-mono text-sm resize-none border-none outline-none"
+                    style="background: #1e1e1e; color: #d4d4d4; font-family: 'Consolas', 'Monaco', 'Courier New', monospace;"
+                >
+// Welcome To DevCoder AI (Fallback Editor)
+// Ask the AI assistant to create code and files will be automatically generated here
+// Try asking: "Create a Python web scraper" or "Build a React component"
+
+console.log("Welcome to DevCoder AI!");
+                </textarea>
+            `;
+            
+            const fallbackEditor = document.getElementById('fallbackEditor');
+            
+            // Create a simple editor interface
+            editor = {
+                getValue: () => fallbackEditor.value,
+                setValue: (value) => { fallbackEditor.value = value; },
+                getModel: () => ({ getLanguageId: () => 'javascript' })
+            };
+            
+            // Store the welcome content
+            openFiles.set('welcome', {
+                content: editor.getValue(),
+                language: 'javascript',
+                name: 'Welcome'
             });
+            
+            initializeSplitters();
+            updateFileList();
+            console.log('Fallback editor initialized');
         }
 
         // Initialize drag splitters
@@ -794,7 +1001,16 @@ console.log("Welcome to DevCoder AI!");`,
             document.addEventListener('mouseup', stopResize);
         }
 
-        initializeEditor();
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeEditor();
+            
+            // Focus chat input
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.focus();
+            }
+        });
 
         function createNewFile() {
             const filename = prompt('Enter filename (e.g., main.py, app.js):');
@@ -833,22 +1049,30 @@ console.log("Welcome to DevCoder AI!");`,
         }
 
         function switchToFile(fileId) {
-            if (!editor) {
-                return;
-            }
+            if (!openFiles.has(fileId) || !editor) return;
             
-            // Save current file content
-            if (activeFile && openFiles.has(activeFile)) {
-                openFiles.get(activeFile).content = editor.getValue();
-            }
-
-            // Switch to new file
-            activeFile = fileId;
-            const file = openFiles.get(fileId);
-            
-            if (file) {
-                editor.setValue(file.content);
-                monaco.editor.setModelLanguage(editor.getModel(), file.language);
+            try {
+                // Save current file content
+                if (activeFile && openFiles.has(activeFile)) {
+                    openFiles.get(activeFile).content = editor.getValue();
+                }
+                
+                activeFile = fileId;
+                const file = openFiles.get(fileId);
+                
+                // Update editor content and language
+                if (editor) {
+                    editor.setValue(file.content);
+                    
+                    // Only set language if Monaco is available
+                    if (typeof monaco !== 'undefined' && monaco.editor && editor.getModel) {
+                        try {
+                            monaco.editor.setModelLanguage(editor.getModel(), file.language);
+                        } catch (langError) {
+                            console.warn('Language setting failed:', langError);
+                        }
+                    }
+                }
                 
                 // Update active tab
                 document.querySelectorAll('.tab').forEach(tab => {
@@ -877,6 +1101,9 @@ console.log("Welcome to DevCoder AI!");`,
                 
                 // Update run button state
                 updateRunButton();
+                
+            } catch (error) {
+                console.error('File switching error:', error);
             }
         }
 
@@ -951,6 +1178,22 @@ console.log("Welcome to DevCoder AI!");`,
             return langMap[ext] || 'plaintext';
         }
 
+        // Generate unique filename without long timestamps
+        function getUniqueFileName(baseName, extension) {
+            let filename = `${baseName}.${extension}`;
+            let counter = 1;
+            
+            // Check if filename already exists
+            const existingNames = Array.from(openFiles.values()).map(file => file.name);
+            
+            while (existingNames.includes(filename)) {
+                filename = `${baseName}${counter}.${extension}`;
+                counter++;
+            }
+            
+            return filename;
+        }
+
         async function saveFileToBackend(filename, content, language) {
             try {
                 await fetch('/create_file', {
@@ -963,150 +1206,149 @@ console.log("Welcome to DevCoder AI!");`,
             }
         }
 
-        // Chat functionality
+        // Send message to AI
         async function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            if (!message) return;
-
-            addChatMessage(message, true);
-            input.value = '';
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
             
-            showTypingIndicator();
-
+            if (!message) return;
+            
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // Add user message
+            chatMessages.innerHTML += `
+                <div class="message user-message">
+                    <strong style="color: #fff;">You:</strong> ${message}
+                </div>
+            `;
+            
+            chatInput.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Add loading message
+            chatMessages.innerHTML += `
+                <div class="message ai-message" id="loadingMessage">
+                    <strong style="color: #58a6ff;">DevCoder AI:</strong> <span class="typing-indicator">Thinking...</span>
+                </div>
+            `;
+            
             try {
-                const response = await fetch('/chat', {
+                const response = await fetch('/api/chat', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message
+                    })
                 });
-
-                const data = await response.json();
-                hideTypingIndicator();
-
-                if (response.ok) {
-                    addChatMessage(data.response, false);
-                    // Auto-create files from code blocks
-                    console.log('AI Response:', data.response);
-                    extractAndCreateFiles(data.response);
+                
+                const result = await response.json();
+                
+                // Remove loading message
+                document.getElementById('loadingMessage').remove();
+                
+                if (result.success || result.response) {
+                    const aiResponse = result.response || result.message;
+                    
+                    // Auto-create files if AI response contains code blocks
+                    const codeBlocks = aiResponse.match(/```[\w]*\n[\s\S]*?\n```/g);
+                    if (codeBlocks && codeBlocks.length > 0) {
+                        // Extract and create files automatically
+                        codeBlocks.forEach((block, index) => {
+                            const langMatch = block.match(/```(\w+)/);
+                            const codeMatch = block.match(/```[\w]*\n([\s\S]*?)\n```/);
+                            
+                            if (codeMatch) {
+                                const detectedLang = langMatch ? langMatch[1].toLowerCase() : 'text';
+                                const code = codeMatch[1].trim();
+                                
+                                // Clean filename generation without timestamps
+                                let filename, language;
+                                
+                                switch(detectedLang) {
+                                    case 'html':
+                                        filename = getUniqueFileName('index', 'html');
+                                        language = 'html';
+                                        break;
+                                    case 'css':
+                                        filename = getUniqueFileName('style', 'css');
+                                        language = 'css';
+                                        break;
+                                    case 'javascript':
+                                    case 'js':
+                                        filename = getUniqueFileName('script', 'js');
+                                        language = 'javascript';
+                                        break;
+                                    case 'python':
+                                    case 'py':
+                                        filename = getUniqueFileName('main', 'py');
+                                        language = 'python';
+                                        break;
+                                    case 'java':
+                                        filename = getUniqueFileName('Main', 'java');
+                                        language = 'java';
+                                        break;
+                                    case 'json':
+                                        filename = getUniqueFileName('data', 'json');
+                                        language = 'json';
+                                        break;
+                                    case 'xml':
+                                        filename = getUniqueFileName('data', 'xml');
+                                        language = 'xml';
+                                        break;
+                                    case 'sql':
+                                        filename = getUniqueFileName('query', 'sql');
+                                        language = 'sql';
+                                        break;
+                                    default:
+                                        filename = getUniqueFileName('file', 'txt');
+                                        language = 'text';
+                                }
+                                
+                                // Create file automatically using the existing createFile function
+                                createFile(filename, code, language);
+                            }
+                        });
+                    } else {
+                        // If no code blocks, put response directly in editor
+                        if (editor) {
+                            editor.setValue(aiResponse);
+                            // Update current file content
+                            if (activeFile && openFiles.has(activeFile)) {
+                                openFiles.get(activeFile).content = aiResponse;
+                            }
+                        }
+                    }
+                    
+                    chatMessages.innerHTML += `
+                        <div class="message ai-message">
+                            <strong style="color: #58a6ff;">DevCoder AI:</strong> ${parseMarkdown(aiResponse)}
+                            ${codeBlocks && codeBlocks.length > 0 ? `<p style="color: #00D084; font-size: 12px; margin-top: 8px;">✅ ${codeBlocks.length} file(s) created automatically!</p>` : '<p style="color: #58a6ff; font-size: 12px; margin-top: 8px;">📝 Response written to editor!</p>'}
+                        </div>
+                    `;
                 } else {
-                    addChatMessage(`Error: ${data.error}`, false);
+                    chatMessages.innerHTML += `
+                        <div class="message ai-message" style="background: #ff4757; color: white;">
+                            <strong>Error:</strong> Sorry, I couldn't process your request right now.
+                        </div>
+                    `;
                 }
             } catch (error) {
-                hideTypingIndicator();
-                addChatMessage(`Failed to connect: ${error.message}`, false);
-            }
-        }
-
-        function addChatMessage(content, isUser) {
-            const chatMessages = document.getElementById('chatMessages');
-            const message = document.createElement('div');
-            message.className = `message ${isUser ? 'user' : 'ai'}`;
-            
-            if (isUser) {
-                message.innerHTML = `<strong>You:</strong> ${content}`;
-            } else {
-                message.innerHTML = `<strong>DevCoder AI:</strong> ${parseMarkdown(content)}`;
+                document.getElementById('loadingMessage')?.remove();
+                chatMessages.innerHTML += `
+                    <div class="message ai-message" style="background: #ff4757; color: white;">
+                        <strong>Connection Error:</strong> Failed to connect to AI assistant.
+                    </div>
+                `;
             }
             
-            chatMessages.appendChild(message);
             // Auto-scroll to bottom
             setTimeout(() => {
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }, 100);
         }
 
-        function showTypingIndicator() {
-            const chatMessages = document.getElementById('chatMessages');
-            const indicator = document.createElement('div');
-            indicator.id = 'typingIndicator';
-            indicator.className = 'typing-indicator';
-            indicator.innerHTML = `
-                DevCoder AI is coding...
-                <div class="typing-dots">
-                    <div></div><div></div><div></div>
-                </div>
-            `;
-            chatMessages.appendChild(indicator);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function hideTypingIndicator() {
-            const indicator = document.getElementById('typingIndicator');
-            if (indicator) indicator.remove();
-        }
-
-        function extractAndCreateFiles(response) {
-            console.log('Extracting files from response...');
-            console.log('Full response:', response);
-            
-            // Extract code blocks from markdown - be more aggressive
-            const codeBlockRegex = /```(\w+)?\s*\n?([\s\S]*?)```/g;
-            let match;
-            let foundCodeBlocks = false;
-            
-            // Create files for ALL substantial code blocks
-            while ((match = codeBlockRegex.exec(response)) !== null) {
-                foundCodeBlocks = true;
-                let language = (match[1] || 'python').toLowerCase().trim();
-                const code = match[2].trim();
-                
-                // Fix common language variations
-                if (language === 'js') language = 'javascript';
-                if (language === 'htm') language = 'html';
-                
-                console.log(`Found code block: ${language}, length: ${code.length}`);
-                console.log(`Code preview: ${code.substring(0, 100)}...`);
-                
-                // Create file if code is substantial (>10 characters)
-                if (code.length > 10) {
-                    const ext = getExtensionForLanguage(language);
-                    let filename;
-                    
-                    // Use standard names for web files
-                    if (language === 'html') {
-                        filename = 'index.html';
-                    } else if (language === 'css') {
-                        filename = 'style.css';
-                    } else if (language === 'javascript') {
-                        filename = 'script.js';
-                    } else {
-                        filename = `generated_${Date.now()}${ext}`;
-                    }
-                    
-                    console.log(`Creating file: ${filename} with language: ${language}`);
-                    createFile(filename, code, language);
-                    
-                    // Also save to backend immediately
-                    saveFileToBackend(filename, code, language);
-                    
-                    foundCodeBlocks = true;
-                }
-            }
-            
-            // Also look for code without markdown blocks (fallback)
-            if (!foundCodeBlocks) {
-                // Look for common code patterns
-                const patterns = [
-                    /def\s+\w+\s*\([^)]*\):/g,  // Python functions
-                    /public\s+class\s+\w+/g,    // Java classes
-                    /function\s+\w+\s*\([^)]*\)/g, // JavaScript functions
-                    /console\.log\s*\(/g,       // JavaScript console.log
-                    /print\s*\(/g               // Python print
-                ];
-                
-                for (let pattern of patterns) {
-                    if (pattern.test(response)) {
-                        console.log('Found code pattern, creating file...');
-                        const ext = response.includes('def ') ? '.py' : 
-                                   response.includes('public class') ? '.java' : '.js';
-                        const filename = `code_${Date.now()}${ext}`;
-                        createFile(filename, response, detectLanguageFromContent(response));
-                        break;
-                    }
-                }
-            }
-        }
 
         function parseMarkdown(content) {
             // Simple markdown parsing for code blocks
@@ -1211,9 +1453,36 @@ console.log("Welcome to DevCoder AI!");`,
         }
         
         // Terminal functions
+        function toggleTerminal() {
+            const terminal = document.getElementById('terminalWindow');
+            if (terminal.style.display === 'none' || terminal.style.display === '') {
+                showTerminal();
+            } else {
+                closeTerminal();
+            }
+        }
+        
         function showTerminal() {
             const terminal = document.getElementById('terminalWindow');
             terminal.style.display = 'block';
+            
+            // Focus terminal input immediately and with multiple attempts
+            const terminalInput = document.getElementById('terminalInput');
+            if (terminalInput) {
+                terminalInput.focus();
+                terminalInput.click();
+                
+                // Try again after a short delay
+                setTimeout(() => {
+                    terminalInput.focus();
+                    terminalInput.click();
+                }, 50);
+                
+                // And one more time
+                setTimeout(() => {
+                    terminalInput.focus();
+                }, 200);
+            }
         }
         
         function closeTerminal() {
@@ -1225,11 +1494,196 @@ console.log("Welcome to DevCoder AI!");`,
             const terminal = document.getElementById('terminalWindow');
             const content = terminal.querySelector('.terminal-content');
             if (content.style.display === 'none') {
-                content.style.display = 'block';
+                content.style.display = 'flex';
                 terminal.style.height = '300px';
             } else {
                 content.style.display = 'none';
                 terminal.style.height = '40px';
+            }
+        }
+        
+        // Execute terminal command
+        async function executeTerminalCommand(command) {
+            const terminalOutput = document.getElementById('terminalOutput');
+            const terminalInput = document.getElementById('terminalInput');
+            
+            // Disable input during execution
+            terminalInput.disabled = true;
+            
+            // Add command to output
+            terminalOutput.textContent += `$ ${command}\n`;
+            
+            // Show loading indicator
+            terminalOutput.textContent += 'Executing...\n';
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            
+            // Store running command for termination
+            const commandId = Date.now().toString();
+            runningCommands.set(activeTerminalId, commandId);
+            
+            try {
+                const response = await fetch('/terminal', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        command: command,
+                        terminal_id: activeTerminalId,
+                        command_id: commandId
+                    })
+                });
+                
+                const result = await response.json();
+                
+                // Remove loading indicator
+                const lines = terminalOutput.textContent.split('\n');
+                lines.pop(); // Remove 'Executing...' line
+                lines.pop(); // Remove empty line
+                terminalOutput.textContent = lines.join('\n') + '\n';
+                
+                if (result.success) {
+                    if (result.output) {
+                        terminalOutput.textContent += result.output + '\n';
+                    } else {
+                        terminalOutput.textContent += 'Command executed successfully (no output)\n';
+                    }
+                } else {
+                    terminalOutput.textContent += `Error: ${result.error || 'Command failed'}\n`;
+                }
+                
+            } catch (error) {
+                // Remove loading indicator
+                const lines = terminalOutput.textContent.split('\n');
+                lines.pop(); // Remove 'Executing...' line
+                lines.pop(); // Remove empty line
+                terminalOutput.textContent = lines.join('\n') + '\n';
+                
+                terminalOutput.textContent += `Network Error: ${error.message}\n`;
+            } finally {
+                // Re-enable input and remove from running commands
+                terminalInput.disabled = false;
+                runningCommands.delete(activeTerminalId);
+                terminalInput.focus();
+            }
+            
+            terminalOutput.textContent += '\n';
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+        
+        // Terminal management functions
+        function newTerminalTab() {
+            terminalCounter++;
+            const newTerminalId = `terminal${terminalCounter}`;
+            
+            // Create new terminal tab
+            const tabsContainer = document.getElementById('terminalTabs');
+            const newTab = document.createElement('div');
+            newTab.className = 'terminal-tab';
+            newTab.setAttribute('data-terminal-id', newTerminalId);
+            newTab.innerHTML = `
+                <span>Terminal ${terminalCounter}</span>
+                <span class="terminal-tab-close" onclick="closeTerminalTab('${newTerminalId}')">×</span>
+            `;
+            newTab.onclick = (e) => {
+                if (!e.target.classList.contains('terminal-tab-close')) {
+                    switchTerminalTab(newTerminalId);
+                }
+            };
+            
+            tabsContainer.appendChild(newTab);
+            
+            // Initialize terminal data
+            terminals.set(newTerminalId, {
+                output: 'Welcome to new terminal! 🚀\n\n',
+                history: []
+            });
+            
+            // Switch to new terminal
+            switchTerminalTab(newTerminalId);
+        }
+        
+        function switchTerminalTab(terminalId) {
+            // Update active terminal
+            activeTerminalId = terminalId;
+            
+            // Update tab appearance
+            document.querySelectorAll('.terminal-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-terminal-id') === terminalId) {
+                    tab.classList.add('active');
+                }
+            });
+            
+            // Load terminal content
+            const terminalOutput = document.getElementById('terminalOutput');
+            const terminalData = terminals.get(terminalId);
+            
+            if (terminalData) {
+                terminalOutput.textContent = terminalData.output;
+            } else {
+                // Initialize if doesn't exist
+                terminals.set(terminalId, {
+                    output: 'Welcome to DevCoder Terminal! 🚀\nType commands like: pip install pygame, npm install express, python --version\nPress Ctrl+C to terminate running commands\n\n',
+                    history: []
+                });
+                terminalOutput.textContent = terminals.get(terminalId).output;
+            }
+            
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+            document.getElementById('terminalInput').focus();
+        }
+        
+        function closeTerminalTab(terminalId) {
+            const tabs = document.querySelectorAll('.terminal-tab');
+            if (tabs.length <= 1) {
+                // Don't close the last terminal
+                return;
+            }
+            
+            // Remove terminal data
+            terminals.delete(terminalId);
+            runningCommands.delete(terminalId);
+            
+            // Remove tab
+            const tab = document.querySelector(`[data-terminal-id="${terminalId}"]`);
+            if (tab) {
+                tab.remove();
+            }
+            
+            // Switch to first available terminal if this was active
+            if (activeTerminalId === terminalId) {
+                const remainingTabs = document.querySelectorAll('.terminal-tab');
+                if (remainingTabs.length > 0) {
+                    const firstTabId = remainingTabs[0].getAttribute('data-terminal-id');
+                    switchTerminalTab(firstTabId);
+                }
+            }
+        }
+        
+        function terminateCommand() {
+            const terminalOutput = document.getElementById('terminalOutput');
+            const terminalInput = document.getElementById('terminalInput');
+            
+            if (runningCommands.has(activeTerminalId)) {
+                terminalOutput.textContent += '^C\nCommand terminated by user\n\n';
+                runningCommands.delete(activeTerminalId);
+                terminalInput.disabled = false;
+                terminalInput.focus();
+            } else {
+                terminalOutput.textContent += 'No running command to terminate\n\n';
+            }
+            
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
+        
+        function clearTerminal() {
+            const terminalOutput = document.getElementById('terminalOutput');
+            terminalOutput.textContent = '';
+            
+            // Update terminal data
+            if (terminals.has(activeTerminalId)) {
+                terminals.get(activeTerminalId).output = '';
             }
         }
         
@@ -1282,6 +1736,71 @@ console.log("Welcome to DevCoder AI!");`,
                         .warning-btn {
                             transition: all 0.3s ease;
                             transform: translateY(0);
+                        }
+                        .warning-btn:hover {
+                            transform: translateY(-2px);
+                            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+                        }
+                        .warning-btn:active {
+                            transform: translateY(0);
+                        }
+                    </style>
+                    <div class="warning-modal" style="
+                        background: linear-gradient(145deg, #1e1e1e, #2d2d30);
+                        border: 1px solid #4a9eff;
+                        border-radius: 20px;
+                        padding: 40px 30px;
+                        max-width: 90%;
+                        width: 400px;
+                        text-align: center;
+                        box-shadow: 
+                            0 20px 60px rgba(0, 0, 0, 0.7),
+                            0 0 0 1px rgba(74, 158, 255, 0.3),
+                            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                        position: relative;
+                        overflow: hidden;
+                    ">
+                        <div style="
+                            position: absolute;
+                            top: -50%;
+                            left: -50%;
+                            width: 200%;
+                            height: 200%;
+                            background: radial-gradient(circle, rgba(74, 158, 255, 0.1) 0%, transparent 70%);
+                            pointer-events: none;
+                        "></div>
+                        
+                        <div class="warning-icon" style="
+                            font-size: 64px; 
+                            margin-bottom: 25px;
+                            background: linear-gradient(45deg, #ff6b6b, #ffa500);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                        ">📱</div>
+                        
+                        <h2 style="
+                            color: #ffffff;
+                            margin: 0 0 10px 0;
+                            font-size: 28px;
+                            font-weight: 700;
+                            background: linear-gradient(45deg, #4a9eff, #00d4ff);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                        ">
+                            Mobile Device Detected
+                        </h2>
+                        
+                        <div style="
+                            width: 60px;
+                            height: 3px;
+                            background: linear-gradient(90deg, #4a9eff, #00d4ff);
+                            margin: 0 auto 25px auto;
+                            border-radius: 2px;
+                        "></div>
+                        
+                        <p style="
                             color: #b8b8b8;
                             margin: 0 0 30px 0;
                             font-size: 16px;
@@ -1345,7 +1864,9 @@ console.log("Welcome to DevCoder AI!");`,
             
             const terminalHeader = document.getElementById('terminalHeader');
             const terminal = document.getElementById('terminalWindow');
+            const terminalInput = document.getElementById('terminalInput');
             
+            // Terminal dragging functionality
             if (terminalHeader && terminal) {
                 terminalHeader.addEventListener('mousedown', function(e) {
                     isDragging = true;
@@ -1369,6 +1890,71 @@ console.log("Welcome to DevCoder AI!");`,
                     document.removeEventListener('mousemove', drag);
                     document.removeEventListener('mouseup', stopDrag);
                 }
+            }
+            
+            // Terminal input handling
+            if (terminalInput) {
+                terminalInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        const command = terminalInput.value.trim();
+                        if (command) {
+                            executeTerminalCommand(command);
+                            terminalInput.value = '';
+                        }
+                    }
+                });
+                
+                // Command history (basic)
+                let commandHistory = [];
+                let historyIndex = -1;
+                
+                terminalInput.addEventListener('keydown', function(e) {
+                    // Ctrl+C to terminate command
+                    if (e.ctrlKey && e.key === 'c') {
+                        e.preventDefault();
+                        terminateCommand();
+                        return;
+                    }
+                    
+                    // Ctrl+L to clear terminal
+                    if (e.ctrlKey && e.key === 'l') {
+                        e.preventDefault();
+                        clearTerminal();
+                        return;
+                    }
+                    
+                    if (e.key === 'ArrowUp') {
+                        e.preventDefault();
+                        if (historyIndex < commandHistory.length - 1) {
+                            historyIndex++;
+                            terminalInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                        }
+                    } else if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        if (historyIndex > 0) {
+                            historyIndex--;
+                            terminalInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+                        } else if (historyIndex === 0) {
+                            historyIndex = -1;
+                            terminalInput.value = '';
+                        }
+                    } else if (e.key === 'Enter') {
+                        const command = terminalInput.value.trim();
+                        if (command && !commandHistory.includes(command)) {
+                            commandHistory.push(command);
+                            if (commandHistory.length > 50) {
+                                commandHistory.shift(); // Keep only last 50 commands
+                            }
+                        }
+                        historyIndex = -1;
+                    }
+                });
+                
+                // Initialize first terminal
+                terminals.set('terminal1', {
+                    output: 'Welcome to DevCoder Terminal! 🚀\nType commands like: pip install pygame, npm install express, python --version\nPress Ctrl+C to terminate running commands\n\n',
+                    history: []
+                });
             }
         });
         
@@ -1447,208 +2033,6 @@ console.log("Welcome to DevCoder AI!");`,
 
         // Rename file function
         function renameFile(fileId) {
-            const file = openFiles.get(fileId);
-            if (!file) return;
-            
-            const newName = prompt('Enter new filename:', file.name);
-            if (newName && newName !== file.name) {
-                // Update file name
-                file.name = newName;
-                file.path = newName;
-                
-                // Update language based on new extension
-                file.language = detectLanguage(newName);
-                
-                // Update tab text
-                const tab = document.querySelector(`[data-file="${fileId}"]`);
-                if (tab) {
-                    tab.querySelector('span').textContent = newName;
-                }
-                
-                // Refresh file list
-                updateFileList();
-                
-                // Update Monaco editor language if this is the active file
-                if (activeFile === fileId && editor) {
-                    monaco.editor.setModelLanguage(editor.getModel(), file.language);
-                }
-                
-                console.log(`File renamed to: ${newName}`);
-            }
-        }
-
-        // Logout function
-        function logout() {
-            window.location.href = '/logout';
-        }
-
-        // Enter key support for chat
-        document.getElementById('chatInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-
-        // Initialize editor when page loads
-        initializeEditor();
-    </script>
-</body>
-</html>
-            
-            // Save current file first
-            if (activeFile && openFiles.has(activeFile)) {
-                openFiles.get(activeFile).content = editor.getValue();
-                saveFileToBackend(currentFile.name, editor.getValue(), currentFile.language);
-            }
-            
-            // Open preview in new window
-            const previewUrl = `/preview/${currentFile.name}`;
-            window.open(previewUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-        }
-
-        // Simple test function
-        function testRunCode() {
-            alert('Run Code button clicked! Editor exists: ' + (editor ? 'YES' : 'NO'));
-            if (editor) {
-                const code = editor.getValue();
-                alert('Code in editor: ' + code.substring(0, 50) + '...');
-                runCode();
-            }
-        }
-
-        // Rename file function
-        function renameFile(fileId) {
-            const file = openFiles.get(fileId);
-            if (!file) return;
-            
-            const newName = prompt('Enter new filename:', file.name);
-            if (newName && newName !== file.name) {
-                // Update file name
-                file.name = newName;
-                file.path = newName;
-                
-                // Update language based on new extension
-                file.language = detectLanguage(newName);
-                
-                // Update tab text
-                const tab = document.querySelector(`[data-file="${fileId}"]`);
-                if (tab) {
-                    tab.querySelector('span').textContent = newName;
-                }
-                
-                // Refresh file list
-                updateFileList();
-                
-                // Update Monaco editor language if this is the active file
-                if (activeFile === fileId && editor) {
-                    monaco.editor.setModelLanguage(editor.getModel(), file.language);
-                }
-                
-                console.log(`File renamed to: ${newName}`);
-            }
-        }
-
-        // Logout function
-        function logout() {
-            window.location.href = '/logout';
-        }
-
-        // Enter key support for chat
-        document.getElementById('chatInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    </script>
-</body>
-</html>
-
-        // Rename file function
-        function renameFile(fileId) {
-            const file = openFiles.get(fileId);
-            if (!file) return;
-            
-            const newName = prompt('Enter new filename:', file.name);
-            if (newName && newName !== file.name) {
-                // Update file name
-                file.name = newName;
-                file.path = newName;
-                
-                // Update language based on new extension
-                file.language = detectLanguage(newName);
-                
-                // Update tab text
-                const tab = document.querySelector(`[data-file="${fileId}"]`);
-                if (tab) {
-                    tab.querySelector('span').textContent = newName;
-                }
-                
-                // Refresh file list
-                updateFileList();
-                
-                // Update Monaco editor language if this is the active file
-                if (activeFile === fileId && editor) {
-                    monaco.editor.setModelLanguage(editor.getModel(), file.language);
-                }
-                
-                console.log(`File renamed to: ${newName}`);
-            }
-        }
-
-        // Logout function
-        function logout() {
-            window.location.href = '/logout';
-        }
-
-        // Enter key support for chat
-        document.getElementById('chatInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    </script>
-</body>
-</html>
-
-                file.name = newName;
-                file.path = newName;
-                
-                // Update language based on new extension
-                file.language = detectLanguage(newName);
-                
-                // Update tab text
-                const tab = document.querySelector(`[data-file="${fileId}"]`);
-                if (tab) {
-                    tab.querySelector('span').textContent = newName;
-                }
-                
-                // Refresh file list
-                updateFileList();
-                
-                // Update Monaco editor language if this is the active file
-                if (activeFile === fileId && editor) {
-                    monaco.editor.setModelLanguage(editor.getModel(), file.language);
-                }
-                
-                console.log(`File renamed to: ${newName}`);
-            }
-        }
-
-        // Logout function
-        function logout() {
-            window.location.href = '/logout';
-        }
-
-        // Enter key support for chat
-        document.getElementById('chatInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    </script>
-</body>
-</html>
-
             const file = openFiles.get(fileId);
             if (!file) return;
             

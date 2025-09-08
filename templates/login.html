@@ -5,196 +5,130 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - DevCoder AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --github-bg: #0d1117;
-            --github-surface: #161b22;
-            --github-border: #30363d;
-            --github-text: #f0f6fc;
-            --github-blue: #58a6ff;
-            --github-purple: #bc8cff;
-        }
-
         body {
-            background: var(--github-bg);
-            color: var(--github-text);
+            background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #21262d 100%);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
         }
-
-        .auth-card {
-            background: var(--github-surface);
-            border: 1px solid var(--github-border);
-            border-radius: 12px;
+        .glass-card {
+            background: rgba(22, 27, 34, 0.8);
             backdrop-filter: blur(10px);
+            border: 1px solid rgba(48, 54, 61, 0.3);
         }
-
-        .primary-button {
-            background: linear-gradient(135deg, var(--github-blue), var(--github-purple));
-            border: none;
+        .gradient-text {
+            background: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .glow-button {
+            background: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
             transition: all 0.3s ease;
         }
-
-        .primary-button:hover:not(:disabled) {
+        .glow-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(88, 166, 255, 0.3);
+            box-shadow: 0 8px 25px rgba(88, 166, 255, 0.4);
         }
-
-        .primary-button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
         .form-input {
-            background: var(--github-bg);
-            border: 1px solid var(--github-border);
-            color: var(--github-text);
+            background: rgba(13, 17, 23, 0.8);
+            border: 1px solid #30363d;
             transition: all 0.3s ease;
         }
-
         .form-input:focus {
-            border-color: var(--github-blue);
+            border-color: #58a6ff;
             box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.1);
             outline: none;
         }
-
-        .gradient-text {
-            background: linear-gradient(135deg, var(--github-blue), var(--github-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .floating-shape {
+            position: absolute;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
         }
-
-        .animate-fade-in {
-            animation: fadeIn 0.6s ease-out;
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
         }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .animate-delay-1 { animation-delay: 0.2s; }
-        .animate-delay-2 { animation-delay: 0.4s; }
     </style>
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen flex items-center justify-center relative overflow-hidden">
     <!-- Background Effects -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-github-blue/5 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-github-purple/5 rounded-full blur-3xl"></div>
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="floating-shape w-32 h-32 bg-blue-500 rounded-full top-1/4 left-1/4" style="animation-delay: 0s;"></div>
+        <div class="floating-shape w-24 h-24 bg-purple-500 rounded-lg top-3/4 right-1/4" style="animation-delay: 2s;"></div>
+        <div class="floating-shape w-40 h-40 bg-indigo-500 rounded-full bottom-1/4 left-1/3" style="animation-delay: 4s;"></div>
     </div>
 
-    <div class="min-h-screen flex items-center justify-center px-6 py-12 relative z-10">
-        <div class="auth-card p-8 w-full max-w-md animate-fade-in">
-            <div class="text-center mb-8 animate-delay-1">
-                <div class="w-16 h-16 rounded-lg bg-gradient-to-br from-github-blue to-github-purple flex items-center justify-center mx-auto mb-4">
-                    <span class="text-white text-2xl font-bold">DC</span>
-                </div>
-                <h1 class="text-3xl font-bold text-white mb-2">Welcome back</h1>
-                <p class="text-gray-400">Sign in to your <span class="gradient-text font-semibold">DevCoder AI</span> account</p>
+    <!-- Main Container -->
+    <div class="glass-card p-8 rounded-2xl shadow-2xl w-full max-w-md mx-4 relative z-10">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl mb-4">
+                <i class="fas fa-code text-white text-2xl"></i>
             </div>
+            <h1 class="text-3xl font-bold gradient-text mb-2">DevCoder AI</h1>
+            <p class="text-gray-400">Welcome back! Sign in to continue coding</p>
+        </div>
 
-            <form id="loginForm" class="space-y-6 animate-delay-2">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Username</label>
-                    <input type="text" id="username" required
-                        class="form-input w-full px-4 py-3 rounded-lg transition-all duration-200"
-                        placeholder="Enter your username">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="mb-6">
+                    {% for message in messages %}
+                        <div class="bg-red-900/50 border border-red-500/50 text-red-300 px-4 py-3 rounded-lg backdrop-blur-sm">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>{{ message }}
+                        </div>
+                    {% endfor %}
                 </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
-                    <input type="password" id="password" required
-                        class="form-input w-full px-4 py-3 rounded-lg transition-all duration-200"
-                        placeholder="Enter your password">
-                </div>
+            {% endif %}
+        {% endwith %}
 
-                <button type="submit" id="loginBtn"
-                    class="primary-button w-full text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center">
-                    <span id="loginBtnText">Sign In</span>
-                    <div id="loginSpinner" class="hidden ml-2">
-                        <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </div>
-                </button>
-            </form>
-
-            <div class="mt-8 text-center">
-                <div class="relative">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-github-border"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-2 bg-github-surface text-gray-400">New to DevCoder AI?</span>
-                    </div>
-                </div>
-                <div class="mt-6">
-                    <a href="/signup" class="inline-flex items-center justify-center w-full px-6 py-3 border border-github-border rounded-lg text-gray-300 hover:text-white hover:border-github-blue transition-all duration-200">
-                        Create your account
-                        <svg class="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
-                    </a>
-                </div>
+        <!-- Login Form -->
+        <form method="POST" action="{{ url_for('login') }}" class="space-y-6">
+            <div>
+                <label class="block text-gray-300 text-sm font-semibold mb-2" for="username">
+                    <i class="fas fa-user mr-2 text-blue-400"></i>Username
+                </label>
+                <input class="form-input w-full text-white px-4 py-3 rounded-lg placeholder-gray-500" 
+                       id="username" name="username" type="text" placeholder="Enter your username" required>
             </div>
+            
+            <div>
+                <label class="block text-gray-300 text-sm font-semibold mb-2" for="password">
+                    <i class="fas fa-lock mr-2 text-purple-400"></i>Password
+                </label>
+                <input class="form-input w-full text-white px-4 py-3 rounded-lg placeholder-gray-500" 
+                       id="password" name="password" type="password" placeholder="Enter your password" required>
+            </div>
+            
+            <button class="glow-button w-full text-white font-bold py-3 px-6 rounded-lg" type="submit">
+                <i class="fas fa-sign-in-alt mr-2"></i>Sign In to DevCoder AI
+            </button>
+        </form>
 
-            <div id="message" class="mt-6 p-4 rounded-lg hidden"></div>
+        <!-- Divider -->
+        <div class="flex items-center my-6">
+            <div class="flex-1 border-t border-gray-600"></div>
+            <span class="px-4 text-gray-400 text-sm">or</span>
+            <div class="flex-1 border-t border-gray-600"></div>
+        </div>
+
+        <!-- Sign Up Link -->
+        <div class="text-center">
+            <p class="text-gray-400 mb-4">Don't have an account?</p>
+            <a href="{{ url_for('signup') }}" 
+               class="inline-flex items-center justify-center w-full bg-gray-800/50 hover:bg-gray-700/50 
+                      text-gray-300 hover:text-white font-semibold py-3 px-6 rounded-lg 
+                      transition-all duration-300 border border-gray-600 hover:border-blue-500">
+                <i class="fas fa-user-plus mr-2"></i>Create New Account
+            </a>
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-8 pt-6 border-t border-gray-700">
+            <p class="text-gray-500 text-xs">
+                © 2024 DevCoder AI • Built with <i class="fas fa-heart text-red-500"></i> by Siddharth Chauhan
+            </p>
         </div>
     </div>
-
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const messageDiv = document.getElementById('message');
-            const loginBtn = document.getElementById('loginBtn');
-            const loginBtnText = document.getElementById('loginBtnText');
-            const loginSpinner = document.getElementById('loginSpinner');
-
-            // Show loading state
-            loginBtn.disabled = true;
-            loginBtnText.textContent = 'Signing In...';
-            loginSpinner.classList.remove('hidden');
-            messageDiv.classList.add('hidden');
-
-            try {
-                const response = await fetch('/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    messageDiv.className = 'mt-4 p-3 rounded-lg bg-green-600 text-white';
-                    messageDiv.textContent = data.message;
-                    messageDiv.classList.remove('hidden');
-                    loginBtnText.textContent = 'Success! Redirecting...';
-                    setTimeout(() => window.location.href = '/dashboard', 1500);
-                } else {
-                    messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white';
-                    messageDiv.textContent = data.message;
-                    messageDiv.classList.remove('hidden');
-                    // Reset button state
-                    loginBtn.disabled = false;
-                    loginBtnText.textContent = 'Sign In';
-                    loginSpinner.classList.add('hidden');
-                }
-            } catch (error) {
-                messageDiv.className = 'mt-4 p-3 rounded-lg bg-red-600 text-white';
-                messageDiv.textContent = 'Login failed. Please try again.';
-                messageDiv.classList.remove('hidden');
-                // Reset button state
-                loginBtn.disabled = false;
-                loginBtnText.textContent = 'Sign In';
-                loginSpinner.classList.add('hidden');
-            }
-        });
-    </script>
 </body>
 </html>
