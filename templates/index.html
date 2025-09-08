@@ -136,8 +136,8 @@
                 </div>
                 <nav class="hidden md:flex items-center space-x-6">
                     <a href="#features" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Features</a>
-                    <a href="/chat" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Chat</a>
-                    <a href="/editor" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Editor</a>
+                    <a href="/login" class="text-gray-300 hover:text-white transition-colors text-sm font-medium">Login</a>
+                    <a href="/signup" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200">Sign Up</a>
                 </nav>
             </div>
         </div>
@@ -165,18 +165,25 @@
                 </div>
                 
                 <div class="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in animate-delay-1">
-                    <button onclick="window.location.href='/chat'" class="primary-button text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
+                    <button onclick="window.location.href='/signup'" class="primary-button text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
                         Get started →
                     </button>
-                    <div class="flex items-center space-x-6 text-sm text-gray-400">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                            <span>Desktop</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                            <span>Browser</span>
-                        </div>
+                    <button onclick="window.location.href='/login'" class="github-button text-white px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-200">
+                        Sign In
+                    </button>
+                </div>
+                <div class="flex items-center justify-center space-x-6 text-sm text-gray-400 mt-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <span>AI-Powered</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                        <span>Cloud-Based</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-purple-500 rounded-full"></div>
+                        <span>Secure</span>
                     </div>
                 </div>
             </div>
@@ -325,11 +332,11 @@
             <h2 class="text-4xl font-bold text-white mb-6">Ready to supercharge your development?</h2>
             <p class="text-xl text-gray-400 mb-8">Join thousands of developers using AI-powered cloud environments.</p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <button onclick="window.location.href='/chat'" class="primary-button text-white px-8 py-4 rounded-lg font-semibold text-lg">
+                <button onclick="window.location.href='/signup'" class="primary-button text-white px-8 py-4 rounded-lg font-semibold text-lg">
                     Start coding now →
                 </button>
-                <button onclick="window.location.href='/editor'" class="github-button text-white px-8 py-4 rounded-lg font-semibold text-lg">
-                    Try the editor
+                <button onclick="window.location.href='/login'" class="github-button text-white px-8 py-4 rounded-lg font-semibold text-lg">
+                    Sign In
                 </button>
             </div>
         </div>

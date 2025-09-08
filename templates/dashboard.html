@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - DevCoder AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --github-bg: #0d1117;
+            --github-surface: #161b22;
+            --github-border: #30363d;
+            --github-text: #f0f6fc;
+            --github-blue: #58a6ff;
+            --github-purple: #bc8cff;
+        }
+
+        body {
+            background: var(--github-bg);
+            color: var(--github-text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+        }
+
+        .dashboard-card {
+            background: var(--github-surface);
+            border: 1px solid var(--github-border);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            border-color: var(--github-blue);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(88, 166, 255, 0.15);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, var(--github-blue), var(--github-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .primary-button {
+            background: linear-gradient(135deg, #58a6ff, #bc8cff);
+            border: none;
+            transition: all 0.3s ease;
+        }
+
+        .primary-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(88, 166, 255, 0.3);
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-delay-1 { animation-delay: 0.2s; }
+        .animate-delay-2 { animation-delay: 0.4s; }
+        .animate-delay-3 { animation-delay: 0.6s; }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Header -->
+    <header class="border-b border-github-border bg-github-surface/50 backdrop-blur-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-github-blue to-github-purple flex items-center justify-center">
+                        <span class="text-white font-bold text-lg">DC</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">DevCoder AI</h1>
+                        <p class="text-xs text-gray-400">Dashboard</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-sm text-gray-400">Welcome back!</span>
+                    <a href="/logout" class="text-gray-400 hover:text-white transition-colors text-sm">Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-6 py-12">
+        <!-- Welcome Section -->
+        <div class="text-center mb-12 animate-fade-in">
+            <h1 class="text-4xl lg:text-5xl font-bold text-white mb-4">
+                Welcome to your <span class="gradient-text">AI Workspace</span>
+            </h1>
+            <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+                Choose your development environment and start building amazing projects with AI assistance.
+            </p>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="grid md:grid-cols-2 gap-8 mb-12">
+            <!-- Chat Assistant Card -->
+            <div class="dashboard-card p-8 animate-fade-in animate-delay-1">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white">AI Chat Assistant</h3>
+                        <p class="text-gray-400">Interactive coding companion</p>
+                    </div>
+                </div>
+                <p class="text-gray-300 mb-6 leading-relaxed">
+                    Get instant help with coding questions, debug issues, and learn new concepts through natural conversation with our AI assistant.
+                </p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4 text-sm text-gray-400">
+                        <span class="flex items-center">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            Real-time responses
+                        </span>
+                        <span class="flex items-center">
+                            <div class="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                            Multi-language support
+                        </span>
+                    </div>
+                </div>
+                <button onclick="window.location.href='/chat'" class="primary-button w-full text-white py-3 px-6 rounded-lg font-semibold mt-6 transition-all duration-200">
+                    Start Chatting →
+                </button>
+            </div>
+
+            <!-- Code Editor Card -->
+            <div class="dashboard-card p-8 animate-fade-in animate-delay-2">
+                <div class="flex items-center mb-6">
+                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mr-4">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white">Cloud Code Editor</h3>
+                        <p class="text-gray-400">Full-featured development environment</p>
+                    </div>
+                </div>
+                <p class="text-gray-300 mb-6 leading-relaxed">
+                    Write, edit, and run code in a powerful cloud-based editor with syntax highlighting, auto-completion, and integrated AI assistance.
+                </p>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4 text-sm text-gray-400">
+                        <span class="flex items-center">
+                            <div class="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            Syntax highlighting
+                        </span>
+                        <span class="flex items-center">
+                            <div class="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                            AI code completion
+                        </span>
+                    </div>
+                </div>
+                <button onclick="window.location.href='/editor'" class="primary-button w-full text-white py-3 px-6 rounded-lg font-semibold mt-6 transition-all duration-200">
+                    Open Editor →
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="bg-github-surface border border-github-border rounded-xl p-8 animate-fade-in animate-delay-3">
+            <h3 class="text-2xl font-bold text-white mb-6">Quick Actions</h3>
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button class="flex items-center space-x-3 p-4 rounded-lg border border-github-border hover:border-github-blue transition-colors">
+                    <div class="w-8 h-8 rounded bg-green-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                    </div>
+                    <span class="text-white font-medium">New Project</span>
+                </button>
+                <button class="flex items-center space-x-3 p-4 rounded-lg border border-github-border hover:border-github-blue transition-colors">
+                    <div class="w-8 h-8 rounded bg-blue-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-white font-medium">Templates</span>
+                </button>
+                <button class="flex items-center space-x-3 p-4 rounded-lg border border-github-border hover:border-github-blue transition-colors">
+                    <div class="w-8 h-8 rounded bg-purple-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                    </div>
+                    <span class="text-white font-medium">Deployments</span>
+                </button>
+                <button class="flex items-center space-x-3 p-4 rounded-lg border border-github-border hover:border-github-blue transition-colors">
+                    <div class="w-8 h-8 rounded bg-yellow-500/20 flex items-center justify-center">
+                        <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </div>
+                    <span class="text-white font-medium">Settings</span>
+                </button>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

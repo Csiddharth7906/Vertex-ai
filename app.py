@@ -1,30 +1,177 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 import requests
 import json
 import os
 from dotenv import load_dotenv
 import re
+from pymongo import MongoClient
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+import bcrypt
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# MongoDB configuration
+MONGODB_URI = os.getenv('MONGODB_URI')
+client = MongoClient(MONGODB_URI)
+db = client.devcoder_ai
+users_collection = db.users
+
+# Flask-Login configuration
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
 # Groq API configuration
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+
+# User class for Flask-Login
+class User(UserMixin):
+    def __init__(self, user_data):
+        self.id = str(user_data['_id'])
+        self.username = user_data['username']
+        self.email = user_data['email']
+
+@login_manager.user_loader
+def load_user(user_id):
+    from bson import ObjectId
+    user_data = users_collection.find_one({'_id': ObjectId(user_id)})
+    if user_data:
+        return User(user_data)
+    return None
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/chat')
+@login_required
 def chat_page():
     return render_template('chat.html')
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('dashboard.html')
+
 @app.route('/editor')
+@login_required
 def editor_page():
     return render_template('editor.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        user_data = users_collection.find_one({'username': username})
+        
+        if user_data and bcrypt.checkpw(password.encode('utf-8'), user_data['password']):
+            user = User(user_data)
+            login_user(user)
+            return jsonify({'success': True, 'message': 'Login successful'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid username or password'})
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('index'))
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        data = request.get_json()
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+        
+        # Check if user already exists
+        if users_collection.find_one({'username': username}):
+            return jsonify({'success': False, 'message': 'Username already exists'})
+        
+        if users_collection.find_one({'email': email}):
+            return jsonify({'success': False, 'message': 'Email already registered'})
+        
+        # Hash password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
+        
+        # Create user
+        user_doc = {
+            'username': username,
+            'email': email,
+            'password': hashed_password,
+            'created_at': datetime.utcnow()
+        }
+        
+        result = users_collection.insert_one(user_doc)
+        
+        if result.inserted_id:
+            user = User(user_doc)
+            login_user(user)
+            return jsonify({'success': True, 'message': 'Account created successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Failed to create account'})
+    
+    return render_template('signup.html')
+
+
+@app.route('/preview/<filename>')
+def preview_file(filename):
+    try:
+        file_path = os.path.join('generated_code', filename)
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # For HTML files, fix relative paths to absolute paths
+            if filename.endswith('.html'):
+                # Replace relative CSS/JS links with absolute paths
+                content = content.replace('href="style.css"', 'href="/generated_code/style.css"')
+                content = content.replace('href="./style.css"', 'href="/generated_code/style.css"')
+                content = content.replace('src="script.js"', 'src="/generated_code/script.js"')
+                content = content.replace('src="./script.js"', 'src="/generated_code/script.js"')
+                return content, 200, {'Content-Type': 'text/html'}
+            elif filename.endswith('.css'):
+                return content, 200, {'Content-Type': 'text/css'}
+            elif filename.endswith('.js'):
+                return content, 200, {'Content-Type': 'application/javascript'}
+            else:
+                return content
+        else:
+            return "File not found", 404
+    except Exception as e:
+        return f"Error: {str(e)}", 500
+
+@app.route('/generated_code/<filename>')
+def serve_generated_file(filename):
+    try:
+        file_path = os.path.join('generated_code', filename)
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Set proper content type
+            if filename.endswith('.css'):
+                return content, 200, {'Content-Type': 'text/css'}
+            elif filename.endswith('.js'):
+                return content, 200, {'Content-Type': 'application/javascript'}
+            else:
+                return content
+        else:
+            return "File not found", 404
+    except Exception as e:
+        return f"Error: {str(e)}", 500
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -45,15 +192,15 @@ def chat():
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are DevCoder AI, an advanced coding assistant created by Siddharth Chauhan. You specialize in helping developers with programming tasks, code reviews, debugging, and technical solutions. IMPORTANT BEHAVIOR: 1) If a user asks for code but doesn't specify a programming language, ask them which language they prefer (Python, JavaScript, Java, C++, etc.) 2) Always format code properly using markdown code blocks with appropriate language syntax highlighting (```python, ```javascript, etc.) 3) When providing substantial code examples, suggest creating files and ask if they want you to save the code 4) Provide clear, structured responses with: Brief explanation, Code examples, Best practices or tips 5) When asked about your creator, mention you were built by Siddharth Chauhan. Focus on practical, actionable coding solutions and maintain professional developer communication style."
+                    "content": "You are DevCoder AI created by Siddharth Chauhan. CRITICAL RULES: 1) NEVER ask 'what language?' or 'what do you want to build?' - ALWAYS generate code immediately 2) For website requests, create SEPARATE files: index.html, style.css, script.js with proper linking 3) For 'hello world' requests, provide code in multiple languages at once 4) For 'write a program', create a complete working program immediately 5) ALWAYS suggest filenames like 'main.py', 'app.js', 'index.html' 6) Keep responses short - provide code first, brief explanation after 7) If user says 'in python' or 'in java', switch to that language but still provide code immediately 8) For GUI requests, create complete working GUI code 9) Never say 'I need more information' - make reasonable assumptions and code 10) Your job is to CODE, not to ask questions. 11) For websites, create multiple code blocks: ```html for HTML, ```css for CSS, ```javascript for JS files."
                 },
                 {
                     "role": "user",
                     "content": user_message
                 }
             ],
-            "max_tokens": 800,
-            "temperature": 0.8
+            "max_tokens": 2000,
+            "temperature": 0.3
         }
         
         try:
@@ -265,8 +412,95 @@ def execute_code():
                 return jsonify({'error': 'Node.js not installed. JavaScript execution requires Node.js.'}), 400
             finally:
                 os.unlink(temp_file)
+                
+        elif language == 'java':
+            # For Java, compile and run
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.java', delete=False) as f:
+                f.write(code)
+                temp_file = f.name
+            
+            try:
+                # Compile Java code
+                compile_result = subprocess.run(['javac', temp_file], 
+                                              capture_output=True, 
+                                              text=True, 
+                                              timeout=15)
+                
+                if compile_result.returncode != 0:
+                    return jsonify({'output': '', 'error': f'Compilation Error:\n{compile_result.stderr}'})
+                
+                # Run compiled Java code
+                class_name = os.path.basename(temp_file).replace('.java', '')
+                class_file = temp_file.replace('.java', '.class')
+                
+                result = subprocess.run(['java', '-cp', os.path.dirname(temp_file), class_name], 
+                                      capture_output=True, 
+                                      text=True, 
+                                      timeout=10)
+                
+                output = result.stdout
+                error = result.stderr
+                
+                # Clean up class file
+                if os.path.exists(class_file):
+                    os.unlink(class_file)
+                
+                if result.returncode == 0:
+                    return jsonify({'output': output, 'error': None})
+                else:
+                    return jsonify({'output': output, 'error': error})
+                    
+            except FileNotFoundError:
+                return jsonify({'error': 'Java not installed. Java execution requires JDK.'}), 400
+            finally:
+                if os.path.exists(temp_file):
+                    os.unlink(temp_file)
+                    
+        elif language in ['c', 'cpp']:
+            # For C/C++, compile and run
+            ext = '.c' if language == 'c' else '.cpp'
+            compiler = 'gcc' if language == 'c' else 'g++'
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix=ext, delete=False) as f:
+                f.write(code)
+                temp_file = f.name
+            
+            try:
+                # Compile C/C++ code
+                exe_file = temp_file.replace(ext, '.exe')
+                compile_result = subprocess.run([compiler, temp_file, '-o', exe_file], 
+                                              capture_output=True, 
+                                              text=True, 
+                                              timeout=15)
+                
+                if compile_result.returncode != 0:
+                    return jsonify({'output': '', 'error': f'Compilation Error:\n{compile_result.stderr}'})
+                
+                # Run compiled executable
+                result = subprocess.run([exe_file], 
+                                      capture_output=True, 
+                                      text=True, 
+                                      timeout=10)
+                
+                output = result.stdout
+                error = result.stderr
+                
+                # Clean up executable
+                if os.path.exists(exe_file):
+                    os.unlink(exe_file)
+                
+                if result.returncode == 0:
+                    return jsonify({'output': output, 'error': None})
+                else:
+                    return jsonify({'output': output, 'error': error})
+                    
+            except FileNotFoundError:
+                return jsonify({'error': f'{compiler} not installed. {language.upper()} execution requires {compiler}.'}), 400
+            finally:
+                if os.path.exists(temp_file):
+                    os.unlink(temp_file)
         else:
-            return jsonify({'error': f'Language {language} not supported for execution'}), 400
+            return jsonify({'error': f'Language {language} not supported for execution. Supported: Python, JavaScript, Java, C, C++'}), 400
             
     except subprocess.TimeoutExpired:
         return jsonify({'error': 'Code execution timed out (10 seconds limit)'}), 400

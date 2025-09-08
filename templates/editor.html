@@ -575,6 +575,9 @@
                 <button onclick="switchMode()" class="bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 hover:scale-105 shadow-md flex items-center gap-1">
                     💬 Chat
                 </button>
+                <button onclick="logout()" class="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 hover:scale-105 shadow-md">
+                    Logout
+                </button>
                 <div class="flex items-center gap-2 text-sm text-gray-400">
                     <span>Ready</span>
                     <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -598,6 +601,9 @@
                 <div class="editor-actions">
                     <button id="runCodeBtn" onclick="runCode()" class="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg">
                         ▶ Run Code
+                    </button>
+                    <button id="previewBtn" onclick="previewSite()" class="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-500 hover:to-blue-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-lg" style="display: none;">
+                        🌐 Preview Site
                     </button>
                 </div>
             </div>
@@ -665,7 +671,12 @@
             
             <div class="chat-messages" id="chatMessages" style="flex: 1; overflow-y: auto; padding: 16px; max-height: calc(100vh - 200px); scroll-behavior: smooth;">
                 <div class="message ai" style="color: #e6edf3;">
-                    <strong style="color: #58a6ff;">DevCoder AI:</strong> Hello! I'm your coding assistant. Ask me to create any code and I'll automatically generate files for you. Try: "Create a Python web scraper" or "Build a React todo app"
+                    <strong style="color: #58a6ff;">DevCoder AI:</strong> Hello! I'm your coding assistant. I'll create separate files automatically.<br><br>
+                    <strong>📝 For websites, try:</strong><br>
+                    • "Create a portfolio website with HTML, CSS, and JavaScript"<br>
+                    • "Build a responsive landing page with separate files"<br>
+                    • "Make a contact form with HTML, CSS, JS files"<br><br>
+                    <strong>💡 I'll create multiple files that work together!</strong>
                 </div>
             </div>
             
@@ -899,9 +910,9 @@ console.log("Welcome to DevCoder AI!");`,
                 fileItem.setAttribute('data-file-id', fileId);
                 fileItem.innerHTML = `
                     <div class="file-icon">📄</div>
-                    <span>${file.name}</span>
+                    <span onclick="switchToFile('${fileId}')" style="flex: 1; cursor: pointer;">${file.name}</span>
+                    <button onclick="renameFile('${fileId}')" style="background: none; border: none; color: #58a6ff; cursor: pointer; padding: 2px 4px; font-size: 12px;" title="Rename">✏️</button>
                 `;
-                fileItem.onclick = () => switchToFile(fileId);
                 fileList.appendChild(fileItem);
                 
                 // Mobile tabs
@@ -1027,47 +1038,73 @@ console.log("Welcome to DevCoder AI!");`,
 
         function extractAndCreateFiles(response) {
             console.log('Extracting files from response...');
+            console.log('Full response:', response);
             
-            // Check if user is asking for code execution help or just wants to chat
-            const isExecutionQuery = response.toLowerCase().includes('run') || 
-                                   response.toLowerCase().includes('execute') || 
-                                   response.toLowerCase().includes('output');
-            
-            if (isExecutionQuery) {
-                console.log('Skipping file creation - this seems to be about execution');
-                return;
-            }
-            
-            // Extract code blocks from markdown
-            const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+            // Extract code blocks from markdown - be more aggressive
+            const codeBlockRegex = /```(\w+)?\s*\n?([\s\S]*?)```/g;
             let match;
             let foundCodeBlocks = false;
             
-            // Only create one main file from the largest/most complete code block
-            let bestMatch = null;
-            let maxLength = 0;
-
+            // Create files for ALL substantial code blocks
             while ((match = codeBlockRegex.exec(response)) !== null) {
                 foundCodeBlocks = true;
-                const language = match[1] || 'plaintext';
+                let language = (match[1] || 'python').toLowerCase().trim();
                 const code = match[2].trim();
                 
-                console.log(`Found code block: ${language}, length: ${code.length}`);
+                // Fix common language variations
+                if (language === 'js') language = 'javascript';
+                if (language === 'htm') language = 'html';
                 
-                if (code.length > maxLength && code.length > 50) {
-                    maxLength = code.length;
-                    bestMatch = { language, code };
+                console.log(`Found code block: ${language}, length: ${code.length}`);
+                console.log(`Code preview: ${code.substring(0, 100)}...`);
+                
+                // Create file if code is substantial (>10 characters)
+                if (code.length > 10) {
+                    const ext = getExtensionForLanguage(language);
+                    let filename;
+                    
+                    // Use standard names for web files
+                    if (language === 'html') {
+                        filename = 'index.html';
+                    } else if (language === 'css') {
+                        filename = 'style.css';
+                    } else if (language === 'javascript') {
+                        filename = 'script.js';
+                    } else {
+                        filename = `generated_${Date.now()}${ext}`;
+                    }
+                    
+                    console.log(`Creating file: ${filename} with language: ${language}`);
+                    createFile(filename, code, language);
+                    
+                    // Also save to backend immediately
+                    saveFileToBackend(filename, code, language);
+                    
+                    foundCodeBlocks = true;
                 }
             }
             
-            // Create only one file from the best match
-            if (bestMatch) {
-                const ext = getExtensionForLanguage(bestMatch.language);
-                const filename = `main${ext}`;
-                console.log(`Creating single file: ${filename}`);
-                createFile(filename, bestMatch.code, bestMatch.language);
-            } else if (!foundCodeBlocks) {
-                console.log('No code blocks found in response');
+            // Also look for code without markdown blocks (fallback)
+            if (!foundCodeBlocks) {
+                // Look for common code patterns
+                const patterns = [
+                    /def\s+\w+\s*\([^)]*\):/g,  // Python functions
+                    /public\s+class\s+\w+/g,    // Java classes
+                    /function\s+\w+\s*\([^)]*\)/g, // JavaScript functions
+                    /console\.log\s*\(/g,       // JavaScript console.log
+                    /print\s*\(/g               // Python print
+                ];
+                
+                for (let pattern of patterns) {
+                    if (pattern.test(response)) {
+                        console.log('Found code pattern, creating file...');
+                        const ext = response.includes('def ') ? '.py' : 
+                                   response.includes('public class') ? '.java' : '.js';
+                        const filename = `code_${Date.now()}${ext}`;
+                        createFile(filename, response, detectLanguageFromContent(response));
+                        break;
+                    }
+                }
             }
         }
 
@@ -1414,12 +1451,22 @@ console.log("Welcome to DevCoder AI!");`,
         // Update run button state when switching files
         function updateRunButton() {
             const runBtn = document.getElementById('runCodeBtn');
+            const previewBtn = document.getElementById('previewBtn');
             if (!runBtn) return;
             
             const currentFile = openFiles.get(activeFile);
             
             if (currentFile && currentFile.name !== 'Welcome') {
                 const language = currentFile.language;
+                
+                // Show/hide preview button for HTML files
+                if (language === 'html') {
+                    previewBtn.style.display = 'inline-block';
+                } else {
+                    previewBtn.style.display = 'none';
+                }
+                
+                // Update run button
                 if (language === 'python' || language === 'javascript') {
                     runBtn.disabled = false;
                     runBtn.title = `Run ${language} code`;
@@ -1430,7 +1477,27 @@ console.log("Welcome to DevCoder AI!");`,
             } else {
                 runBtn.disabled = true;
                 runBtn.title = 'No executable file selected';
+                previewBtn.style.display = 'none';
             }
+        }
+
+        // Preview static site function
+        function previewSite() {
+            const currentFile = openFiles.get(activeFile);
+            if (!currentFile || currentFile.language !== 'html') {
+                alert('Please select an HTML file to preview');
+                return;
+            }
+            
+            // Save current file first
+            if (activeFile && openFiles.has(activeFile)) {
+                openFiles.get(activeFile).content = editor.getValue();
+                saveFileToBackend(currentFile.name, editor.getValue(), currentFile.language);
+            }
+            
+            // Open preview in new window
+            const previewUrl = `/preview/${currentFile.name}`;
+            window.open(previewUrl, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
         }
 
         // Simple test function
@@ -1441,6 +1508,43 @@ console.log("Welcome to DevCoder AI!");`,
                 alert('Code in editor: ' + code.substring(0, 50) + '...');
                 runCode();
             }
+        }
+
+        // Rename file function
+        function renameFile(fileId) {
+            const file = openFiles.get(fileId);
+            if (!file) return;
+            
+            const newName = prompt('Enter new filename:', file.name);
+            if (newName && newName !== file.name) {
+                // Update file name
+                file.name = newName;
+                file.path = newName;
+                
+                // Update language based on new extension
+                file.language = detectLanguage(newName);
+                
+                // Update tab text
+                const tab = document.querySelector(`[data-file="${fileId}"]`);
+                if (tab) {
+                    tab.querySelector('span').textContent = newName;
+                }
+                
+                // Refresh file list
+                updateFileList();
+                
+                // Update Monaco editor language if this is the active file
+                if (activeFile === fileId && editor) {
+                    monaco.editor.setModelLanguage(editor.getModel(), file.language);
+                }
+                
+                console.log(`File renamed to: ${newName}`);
+            }
+        }
+
+        // Logout function
+        function logout() {
+            window.location.href = '/logout';
         }
 
         // Enter key support for chat
