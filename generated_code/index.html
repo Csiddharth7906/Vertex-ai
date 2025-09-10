@@ -3,32 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login and Signup Page</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Contact Form</title>
+    <link rel='stylesheet' href='style.css'>
 </head>
 <body>
     <div class="container">
-        <h1>Login and Signup Page</h1>
-        <div class="login-signup">
-            <div class="login">
-                <h2>Login</h2>
-                <form id="login-form">
-                    <input type="email" id="email" placeholder="Email">
-                    <input type="password" id="password" placeholder="Password">
-                    <button type="submit">Login</button>
-                </form>
-            </div>
-            <div class="signup">
-                <h2>Signup</h2>
-                <form id="signup-form">
-                    <input type="text" id="name" placeholder="Name">
-                    <input type="email" id="email" placeholder="Email">
-                    <input type="password" id="password" placeholder="Password">
-                    <button type="submit">Signup</button>
-                </form>
-            </div>
-        </div>
+        <h2>Contact Us</h2>
+        <form id="contact-form">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name"><br><br>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email"><br><br>
+            <label for="message">Message:</label>
+            <textarea id="message" name="message"></textarea><br><br>
+            <input type="submit" value="Submit">
+        </form>
+        <div id="result"></div>
     </div>
-    <script src="script.js"></script>
+    <script src='script.js'></script>
 </body>
 </html>

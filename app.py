@@ -185,11 +185,40 @@ def preview_file(filename):
             
             # For HTML files, fix relative paths to absolute paths
             if filename.endswith('.html'):
-                # Replace relative CSS/JS links with absolute paths
-                content = content.replace('href="style.css"', 'href="/generated_code/style.css"')
-                content = content.replace('href="./style.css"', 'href="/generated_code/style.css"')
-                content = content.replace('src="script.js"', 'src="/generated_code/script.js"')
-                content = content.replace('src="./script.js"', 'src="/generated_code/script.js"')
+                # Comprehensive path replacement for CSS files
+                import re
+                
+                # Replace various CSS link patterns
+                css_patterns = [
+                    (r'href=["\'](?!http|//)([^"\']*)\.(css)["\']', r'href="/generated_code/\1.\2"'),
+                    (r'href=["\']\./([^"\']*)\.(css)["\']', r'href="/generated_code/\1.\2"'),
+                    (r'href=["\']([^"\'/]*\.css)["\']', r'href="/generated_code/\1"')
+                ]
+                
+                # Replace various JS script patterns
+                js_patterns = [
+                    (r'src=["\'](?!http|//)([^"\']*)\.(js)["\']', r'src="/generated_code/\1.\2"'),
+                    (r'src=["\']\./([^"\']*)\.(js)["\']', r'src="/generated_code/\1.\2"'),
+                    (r'src=["\']([^"\'/]*\.js)["\']', r'src="/generated_code/\1"')
+                ]
+                
+                # Apply CSS patterns
+                for pattern, replacement in css_patterns:
+                    content = re.sub(pattern, replacement, content, flags=re.IGNORECASE)
+                
+                # Apply JS patterns
+                for pattern, replacement in js_patterns:
+                    content = re.sub(pattern, replacement, content, flags=re.IGNORECASE)
+                
+                # Also handle image and other asset references
+                asset_patterns = [
+                    (r'src=["\'](?!http|//)([^"\']*)\.(png|jpg|jpeg|gif|svg|ico|webp)["\']', r'src="/generated_code/\1.\2"'),
+                    (r'href=["\'](?!http|//)([^"\']*)\.(png|jpg|jpeg|gif|svg|ico|webp)["\']', r'href="/generated_code/\1.\2"')
+                ]
+                
+                for pattern, replacement in asset_patterns:
+                    content = re.sub(pattern, replacement, content, flags=re.IGNORECASE)
+                
                 return content, 200, {'Content-Type': 'text/html'}
             elif filename.endswith('.css'):
                 return content, 200, {'Content-Type': 'text/css'}
@@ -241,11 +270,11 @@ def api_chat():
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are DevCoder AI created by Siddharth Chauhan, a specialized coding assistant. IMPORTANT CONTEXT RULES: 1) Only provide code when user asks programming-related questions (like 'write a function', 'create a website', 'build an app', 'hello world program', etc.) 2) For casual greetings ('hi', 'hello', 'how are you') respond conversationally without code 3) For general questions, provide helpful answers without unnecessary code examples 4) CODING RULES (only when code is requested): Never ask 'what language?' - choose appropriate language or provide multiple 5) For website requests, create SEPARATE files: index.html, style.css, script.js 6) For 'hello world' requests, provide code in multiple languages 7) Always suggest proper filenames 8) Keep coding responses concise - code first, brief explanation after 9) For GUI requests, create complete working code 10) Make reasonable assumptions, don't ask for clarification 11) Use proper code blocks with language tags"
+                    "content": "You are DevCoder AI created by Siddharth Chauhan, a specialized coding assistant. IMPORTANT CONTEXT RULES: 1) Only provide code when user asks programming-related questions (like 'write a function', 'create a website', 'build an app', 'hello world program', etc.) 2) For casual greetings ('hi', 'hello', 'how are you') respond conversationally without code 3) For general questions, provide helpful answers without unnecessary code examples 4) CODING RULES (only when code is requested): Never ask 'what language?' - choose appropriate language or provide multiple 5) For website requests, create SEPARATE files: index.html, style.css, script.js 6) CRITICAL: When creating HTML files, use these EXACT link patterns: <link rel='stylesheet' href='style.css'> for CSS and <script src='script.js'></script> for JavaScript - NO other variations! 7) For 'hello world' requests, provide code in multiple languages 8) Always suggest proper filenames 9) Keep coding responses concise - code first, brief explanation after 10) For GUI requests, create complete working code 11) Make reasonable assumptions, don't ask for clarification 12) Use proper code blocks with language tags 13) ALWAYS use standard filenames: index.html, style.css, script.js for web projects"
                 },
                 {
                     "role": "user",
-                    "content": user_message
+                    "content": user_message + " (Remember: For HTML files, use href='style.css' and src='script.js' - standard relative paths only!)"
                 }
             ],
             "max_tokens": 2000,
